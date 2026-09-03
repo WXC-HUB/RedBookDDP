@@ -78,8 +78,16 @@
     var ctx = canvas.getContext('2d');
 
     var bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#dff5e6'); bg.addColorStop(1, '#bfe8d0');
+    bg.addColorStop(0, '#f4e7cc'); bg.addColorStop(1, '#ece0c0');
     ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    // 外框 + 底部格纹
+    ctx.strokeStyle = '#93ad7f'; ctx.lineWidth = 10; ctx.strokeRect(5, 5, W - 10, H - 10);
+    ctx.fillStyle = '#93ad7f';
+    for (var gx0 = 0; gx0 < W; gx0 += 30) {
+      for (var gy0 = H - 30; gy0 < H; gy0 += 30) {
+        if (((gx0 / 30) + (gy0 / 30)) % 2 === 0) ctx.fillRect(gx0, gy0, 30, 30);
+      }
+    }
 
     // 装饰：9 款围成一圈
     for (var i = 0; i < 9; i++) {
@@ -89,26 +97,33 @@
     }
 
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#1f3a2d';
+    ctx.fillStyle = '#7d9a6a';
     ctx.font = '900 84px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
     ctx.fillText('乌龟对对碰', W / 2, 300);
     ctx.font = '500 30px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
-    ctx.fillStyle = '#5c7a6a';
-    ctx.fillText('我的这一局 · ' + skin.name, W / 2, 350);
+    ctx.fillStyle = '#7d9a6a';
+    ctx.fillText('•  MY RUN · ' + skin.name + '  •', W / 2, 350);
 
     // 白卡
-    ctx.fillStyle = 'rgba(31,58,45,0.18)';
-    roundRect(ctx, 90, 430, 720, 610, 40); ctx.fill();
-    ctx.fillStyle = '#fff';
-    roundRect(ctx, 90, 418, 720, 610, 40); ctx.fill();
+    ctx.fillStyle = '#93ad7f';
+    roundRect(ctx, 84, 412, 732, 622, 26); ctx.fill();
+    ctx.fillStyle = '#f4e7cc';
+    roundRect(ctx, 92, 420, 716, 606, 20); ctx.fill();
+    // 结果标题带
+    ctx.fillStyle = '#2e2d28';
+    roundRect(ctx, W / 2 - 120, 396, 240, 52, 26); ctx.fill();
+    ctx.fillStyle = '#f4e7cc';
+    ctx.font = '900 26px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.fillText('RUN 结束', W / 2, 432);
 
-    ctx.fillStyle = '#1f3a2d';
+    ctx.fillStyle = '#d8552c';
     ctx.font = '900 200px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
     ctx.fillText(String(stats.rounds), W / 2 - 40, 640);
     ctx.font = '700 44px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
-    ctx.fillStyle = '#5c7a6a';
+    ctx.fillStyle = '#2e2d28';
     ctx.fillText('轮', W / 2 + 150, 640);
-    ctx.font = '500 30px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.font = 'italic 500 28px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.fillStyle = '#6e6c62';
     ctx.fillText(stats.reasonText, W / 2, 700);
 
     var items = [
@@ -119,36 +134,38 @@
     var cellW = 210, cellH = 120, gx = 120, gy = 750, gap = 20;
     for (var k = 0; k < items.length; k++) {
       var cx = gx + (k % 3) * (cellW + gap), cy = gy + Math.floor(k / 3) * (cellH + gap);
-      ctx.fillStyle = '#f1f8f4';
-      roundRect(ctx, cx, cy, cellW, cellH, 22); ctx.fill();
-      ctx.fillStyle = '#1f3a2d';
+      ctx.fillStyle = '#93ad7f';
+      roundRect(ctx, cx, cy, cellW, cellH, 14); ctx.fill();
+      ctx.fillStyle = '#ece0c0';
+      roundRect(ctx, cx + 3, cy + 3, cellW - 6, cellH - 6, 12); ctx.fill();
+      ctx.fillStyle = '#2e2d28';
       ctx.font = '800 46px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
       ctx.fillText(String(items[k][1]), cx + cellW / 2, cy + 62);
-      ctx.fillStyle = '#5c7a6a';
-      ctx.font = '500 24px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.fillStyle = '#5f7c4b';
+      ctx.font = '700 22px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
       ctx.fillText(items[k][0], cx + cellW / 2, cy + 100);
     }
 
     if (stats.lucky !== null && stats.lucky !== undefined) {
       drawItem(ctx, stats.lucky, W / 2 - 150, 1005, 72, 0, skin, images);
-      ctx.fillStyle = '#5c7a6a';
-      ctx.font = '500 26px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.fillStyle = '#5f7c4b';
+      ctx.font = '700 26px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText('幸运款 ' + Skin.itemName(stats.lucky) + ' · 加成 +' + stats.luckyBonus, W / 2 - 105, 1014);
       ctx.textAlign = 'center';
     }
 
     if (stats.newRecord) {
-      ctx.fillStyle = '#ff5a5f';
+      ctx.fillStyle = '#d8552c';
       roundRect(ctx, W / 2 - 130, 1060, 260, 60, 30); ctx.fill();
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = '#f4e7cc';
       ctx.font = '800 30px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
       ctx.fillText('新纪录！', W / 2, 1101);
     }
 
-    ctx.fillStyle = '#5c7a6a';
-    ctx.font = '500 26px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
-    ctx.fillText('你能比我撑更多轮吗？', W / 2, 1160);
+    ctx.fillStyle = '#2e2d28';
+    ctx.font = 'italic 700 24px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.fillText("BUY LIKE THERE'S NO TOMORROW  ·  你能比我撑更多轮吗？", W / 2, 1148);
     return canvas;
   }
 
