@@ -1,9 +1,10 @@
 /* 乌龟对对碰 · 战绩图（Canvas 2D 渲染）+ JSBridge 存相册
- * 仅在 Run 结束后按需调用，不参与首屏。ES2017 / Chrome 61。 */
+ * 仅在 Run 结束后按需调用，不参与首屏。ES2017 / Chrome 61。
+ * 依赖 skins.js（window.TurtleSkin）：图片套系直接 drawImage 包内图片；矢量套系用 Canvas 手绘乌龟。 */
 (function (root) {
   'use strict';
 
-  var COLORS = ['#ff6b6b', '#ffa94d', '#ffd43b', '#69db7c', '#38d9a9', '#4dabf7', '#748ffc', '#da77f2', '#f783ac'];
+  var Skin = root.TurtleSkin;
 
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
@@ -15,7 +16,7 @@
     ctx.closePath();
   }
 
-  /* 简笔乌龟（俯视） */
+  /* 简笔乌龟（俯视），矢量套系用 */
   function drawTurtle(ctx, cx, cy, size, color, rot) {
     ctx.save();
     ctx.translate(cx, cy);
@@ -50,8 +51,27 @@
     ctx.restore();
   }
 
-  /* 生成 3:4 战绩卡，返回 canvas */
-  function renderCard(stats) {
+  /* 画第 idx 款：images 为预载好的图片数组（图片套系），为 null 时退回矢量乌龟 / 色块 */
+  function drawItem(ctx, idx, cx, cy, size, rot, skin, images) {
+    if (skin.type === 'image') {
+      var im = images && images[idx];
+      if (im && im.complete && im.naturalWidth > 0) {
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot || 0);
+        ctx.drawImage(im, -size / 2, -size / 2, size, size);
+        ctx.restore();
+      } else {
+        // 图片不可用：画一个柔和色块占位
+        ctx.save(); ctx.fillStyle = 'rgba(31,58,45,0.12)';
+        ctx.beginPath(); ctx.arc(cx, cy, size / 2.4, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      }
+    } else {
+      drawTurtle(ctx, cx, cy, size, skin.colors[idx], rot);
+    }
+  }
+
+  /* 生成 3:4 战绩卡，返回 canvas（同步；images 可为 null） */
+  function renderCard(stats, images) {
+    var skin = Skin.get();
     var W = 900, H = 1200;
     var canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
@@ -61,10 +81,11 @@
     bg.addColorStop(0, '#dff5e6'); bg.addColorStop(1, '#bfe8d0');
     ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
 
-    // 装饰乌龟
+    // 装饰：9 款围成一圈
     for (var i = 0; i < 9; i++) {
       var ang = (i / 9) * Math.PI * 2;
-      drawTurtle(ctx, W / 2 + Math.cos(ang) * 360, 250 + Math.sin(ang) * 130, 90, COLORS[i], ang + Math.PI / 2);
+      var rot = skin.type === 'image' ? (Math.sin(ang) * 0.25) : (ang + Math.PI / 2);
+      drawItem(ctx, i, W / 2 + Math.cos(ang) * 360, 250 + Math.sin(ang) * 130, skin.type === 'image' ? 120 : 90, rot, skin, images);
     }
 
     ctx.textAlign = 'center';
@@ -73,7 +94,7 @@
     ctx.fillText('乌龟对对碰', W / 2, 300);
     ctx.font = '500 30px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
     ctx.fillStyle = '#5c7a6a';
-    ctx.fillText('我的这一局', W / 2, 350);
+    ctx.fillText('我的这一局 · ' + skin.name, W / 2, 350);
 
     // 白卡
     ctx.fillStyle = 'rgba(31,58,45,0.18)';
@@ -89,14 +110,6 @@
     ctx.fillText('轮', W / 2 + 150, 640);
     ctx.font = '500 30px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
     ctx.fillText(stats.reasonText, W / 2, 700);
-    if (stats.lucky !== null && stats.lucky !== undefined) {
-      drawTurtle(ctx, W / 2 - 120, 1000 + 0, 60, COLORS[stats.lucky], 0);
-      ctx.fillStyle = '#5c7a6a';
-      ctx.font = '500 26px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('幸运色加成 +' + stats.luckyBonus, W / 2 - 80, 1010);
-      ctx.textAlign = 'center';
-    }
 
     var items = [
       ['累计赚取', stats.earned], ['最高单轮', stats.bestRound],
@@ -116,6 +129,15 @@
       ctx.fillText(items[k][0], cx + cellW / 2, cy + 100);
     }
 
+    if (stats.lucky !== null && stats.lucky !== undefined) {
+      drawItem(ctx, stats.lucky, W / 2 - 150, 1005, 72, 0, skin, images);
+      ctx.fillStyle = '#5c7a6a';
+      ctx.font = '500 26px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('幸运款 ' + Skin.itemName(stats.lucky) + ' · 加成 +' + stats.luckyBonus, W / 2 - 105, 1014);
+      ctx.textAlign = 'center';
+    }
+
     if (stats.newRecord) {
       ctx.fillStyle = '#ff5a5f';
       roundRect(ctx, W / 2 - 130, 1060, 260, 60, 30); ctx.fill();
@@ -130,13 +152,30 @@
     return canvas;
   }
 
+  /* 加载图片、渲染、导出 dataURL。若包内图片让 canvas 被判为跨源（toDataURL 抛错），改用无图版本重画。
+   * 返回 Promise<{ canvas, dataUrl }>，不 reject。 */
+  function buildCard(stats) {
+    return new Promise(function (resolve) {
+      Skin.preload(null, function (images) {
+        var canvas = renderCard(stats, images);
+        var dataUrl;
+        try {
+          dataUrl = canvas.toDataURL('image/png');
+        } catch (e) {
+          canvas = renderCard(stats, null);
+          dataUrl = canvas.toDataURL('image/png');
+        }
+        resolve({ canvas: canvas, dataUrl: dataUrl });
+      });
+    });
+  }
+
   function hasBridge() {
     return !!(root.xhs && root.xhs.miniTool && typeof root.xhs.miniTool.saveImageToPhotosAlbum === 'function');
   }
 
-  /* 保存到相册。返回 Promise<{ok, msg}>，不 reject。 */
-  function saveToAlbum(canvas) {
-    var dataUrl = canvas.toDataURL('image/png');
+  /* 保存到相册。返回 Promise<{ok, msg, dataUrl}>，不 reject。 */
+  function saveToAlbum(dataUrl) {
     if (!hasBridge()) {
       return Promise.resolve({ ok: false, msg: '当前环境不支持保存到相册', dataUrl: dataUrl });
     }
@@ -157,5 +196,5 @@
     });
   }
 
-  root.TurtleShare = { renderCard: renderCard, saveToAlbum: saveToAlbum, hasBridge: hasBridge };
+  root.TurtleShare = { renderCard: renderCard, buildCard: buildCard, saveToAlbum: saveToAlbum, hasBridge: hasBridge };
 })(window);

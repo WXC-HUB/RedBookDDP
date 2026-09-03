@@ -59,12 +59,12 @@
   <section id="screen-home" class="screen is-active">
     <div class="home">
       <div class="home__logo">
-        <svg class="turtle turtle--c0 home__turtle home__turtle--1"><use xlink:href="#t-turtle" href="#t-turtle"/></svg>
-        <svg class="turtle turtle--c3 home__turtle home__turtle--2"><use xlink:href="#t-turtle" href="#t-turtle"/></svg>
-        <svg class="turtle turtle--c6 home__turtle home__turtle--3"><use xlink:href="#t-turtle" href="#t-turtle"/></svg>
+        <div class="home__mascot home__mascot--1" data-item="0"></div>
+        <div class="home__mascot home__mascot--2" data-item="3"></div>
+        <div class="home__mascot home__mascot--3" data-item="6"></div>
       </div>
       <h1 class="home__title">乌龟对对碰</h1>
-      <p class="home__sub">开卡包 · 碰同色 · 看你能撑几轮</p>
+      <p class="home__sub">开卡包 · 碰同款 · 看你能撑几轮</p>
 
       <div class="home__best" id="home-best">
         <div class="best__item"><span class="best__num" id="best-rounds">0</span><span class="best__label">最长轮次</span></div>
@@ -73,7 +73,10 @@
       </div>
 
       <button class="btn btn--primary btn--big" id="btn-start" type="button">开始游戏</button>
-      <button class="btn btn--ghost" id="btn-rules" type="button">玩法说明</button>
+      <div class="home__links">
+        <button class="btn btn--ghost" id="btn-skins" type="button">皮肤</button>
+        <button class="btn btn--ghost" id="btn-rules" type="button">玩法说明</button>
+      </div>
     </div>
   </section>
 
@@ -98,9 +101,9 @@
 
     <main class="stage">
       <div class="lucky-pill" id="lucky-pill">
-        <span class="lucky-pill__label">幸运色</span>
-        <svg class="turtle lucky-pill__turtle" id="lucky-pill-turtle"><use xlink:href="#t-turtle" href="#t-turtle"/></svg>
-        <span class="lucky-pill__note">消除时每只 +1</span>
+        <span class="lucky-pill__label">幸运款</span>
+        <div class="lucky-pill__sprite" id="lucky-pill-sprite"></div>
+        <span class="lucky-pill__note" id="lucky-pill-note">消除时每只 +1</span>
       </div>
       <div class="board-wrap">
         <div class="board" id="board"></div>
@@ -151,13 +154,22 @@
   </div>
 </div>
 
-<!-- 开局选幸运色 -->
+<!-- 开局选幸运款 -->
 <div class="overlay" id="lucky">
   <div class="sheet">
-    <h2 class="sheet__title">选一只幸运乌龟</h2>
-    <p class="sheet__sub">这局里每消除一只幸运色乌龟，额外 +1 卡包</p>
+    <h2 class="sheet__title" id="lucky-title">选一只幸运伙伴</h2>
+    <p class="sheet__sub">这局里每消除一只幸运款，额外 +1 卡包</p>
     <div class="lucky-grid" id="lucky-grid"></div>
     <button class="btn btn--ghost" id="btn-lucky-random" type="button">随便来一只</button>
+  </div>
+</div>
+
+<!-- 皮肤套系 -->
+<div class="overlay" id="skins">
+  <div class="sheet">
+    <h2 class="sheet__title">皮肤套系</h2>
+    <div class="skin-list" id="skin-list"></div>
+    <button class="btn btn--primary" id="btn-skins-close" type="button">完成</button>
   </div>
 </div>
 
@@ -166,13 +178,13 @@
   <div class="sheet">
     <h2 class="sheet__title">玩法说明</h2>
     <ul class="sheet__list">
-      <li>每个卡包开出一只随机颜色的乌龟，共 9 种颜色。</li>
-      <li>开局先选一只<b>幸运色</b>乌龟：每消除一只幸运色，额外 +1 卡包。</li>
+      <li>每个卡包开出一只随机款式，共 9 款。</li>
+      <li>开局先选一只<b>幸运款</b>：每消除一只幸运款，额外 +1 卡包。</li>
       <li>点击「发牌」，用卡包填满九宫格里的空位。</li>
-      <li><b>对子碰</b>：两只同色乌龟相邻（横竖斜都算），消除，+1 卡包。</li>
-      <li><b>连线碰</b>：三只同色连成一线，消除，+5 卡包。</li>
+      <li><b>对子碰</b>：两只同款相邻（横竖斜都算），消除，+1 卡包。</li>
+      <li><b>连线碰</b>：三只同款连成一线，消除，+5 卡包。</li>
       <li><b>清空</b>：一轮内把盘面全部消光，额外 +5。</li>
-      <li><b>大满贯</b>：九只乌龟九种颜色，全部消除，额外 +5。</li>
+      <li><b>大满贯</b>：九只九款各不相同，全部消除，额外 +5。</li>
       <li>判定顺序：大满贯 → 连线 → 对子 → 清空。</li>
       <li>某一轮什么都没消掉，可以<b>摇晃棋盘</b>打乱位置再判定一次。</li>
       <li>摇过还是没消掉，或卡包用完，本局结束。</li>
@@ -191,6 +203,7 @@
 </div>
 
 <script src="./js/engine.js"></script>
+<script src="./js/skins.js"></script>
 <script src="./js/share.js"></script>
 <script src="./js/app.js"></script>
 </body>

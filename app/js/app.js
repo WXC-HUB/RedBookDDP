@@ -1,16 +1,16 @@
 /* 乌龟对对碰 · 主程序（界面与流程）
- * 依赖：engine.js（window.TurtleEngine）、share.js（window.TurtleShare）
+ * 依赖：engine.js（window.TurtleEngine）、skins.js（window.TurtleSkin）、share.js（window.TurtleShare）
  * ES2017 / Chrome 61：不用可选链、空值合并、对象展开、Array.flat、Promise.finally。 */
 (function () {
   'use strict';
 
   var E = window.TurtleEngine;
+  var Skin = window.TurtleSkin;
   var S = window.TurtleShare;
 
   /* 数值配置（待调） */
   var CONFIG = { startPacks: 20, shakeLimit: 1 };
   var STORAGE_KEY = 'ttddp.best.v1';
-  var COLOR_NAMES = ['红', '橙', '黄', '绿', '青', '蓝', '靛', '紫', '粉'];
 
   function $(id) { return document.getElementById(id); }
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
@@ -52,8 +52,6 @@
   function setOverlay(id, open) { $(id).classList.toggle('is-open', open); }
 
   /* ---------- 棋盘 DOM ---------- */
-  var SVG_NS = 'http://www.w3.org/2000/svg';
-  var XLINK_NS = 'http://www.w3.org/1999/xlink';
   var boardEl = $('board');
   var boardWrap = boardEl.parentNode;
   var cells = [];
@@ -66,16 +64,10 @@
       cell.className = 'cell';
       var inner = document.createElement('div');
       inner.className = 'cell__inner';
-      var svg = document.createElementNS(SVG_NS, 'svg');
-      svg.setAttribute('class', 'turtle');
-      var use = document.createElementNS(SVG_NS, 'use');
-      use.setAttributeNS(XLINK_NS, 'xlink:href', '#t-turtle');
-      use.setAttribute('href', '#t-turtle');
-      svg.appendChild(use);
-      inner.appendChild(svg);
+      Skin.mount(inner);
       cell.appendChild(inner);
       boardEl.appendChild(cell);
-      cells.push({ el: cell, inner: inner, svg: svg, color: null });
+      cells.push({ el: cell, inner: inner, color: null });
     }
   }
 
@@ -84,9 +76,9 @@
     c.color = color;
     var lucky = state && color !== null && color === state.lucky;
     c.el.className = 'cell' + (color === null ? '' : ' is-filled') + (lucky ? ' is-lucky' : '');
-    c.inner.className = 'cell__inner';
+    c.inner.className = 'cell__inner sprite';
     c.inner.style.transform = '';
-    c.svg.setAttribute('class', color === null ? 'turtle' : 'turtle turtle--c' + color);
+    Skin.paint(c.inner, color);
   }
 
   function renderBoard(board) {
@@ -145,7 +137,7 @@
     var k, q;
 
     async function settleGroup(indices, hitClass, label, gain, kind, floatAt) {
-      // 幸运色加成：组内每只幸运色乌龟 +R.lucky
+      // 幸运款加成：组内每只幸运款 +R.lucky
       var luckyCells = [];
       for (q = 0; q < indices.length; q++) if (cells[indices[q]].color === state.lucky) luckyCells.push(indices[q]);
       var bonus = luckyCells.length * R.lucky;
@@ -170,7 +162,7 @@
     }
 
     if (res.slam) {
-      await settleGroup([0, 1, 2, 3, 4, 5, 6, 7, 8], 'is-hit--slam', '大满贯！九色齐聚', res.reward.slam, 'purple', boardEl);
+      await settleGroup([0, 1, 2, 3, 4, 5, 6, 7, 8], 'is-hit--slam', '大满贯！九款齐聚', res.reward.slam, 'purple', boardEl);
     } else {
       for (k = 0; k < res.lines.length; k++) {
         var line = res.lines[k];
@@ -268,7 +260,7 @@
     await wait(560);
     boardWrap.classList.remove('is-shaking');
 
-    // 2. 乌龟按新位置滑动（FLIP）
+    // 2. 款式按新位置滑动（FLIP）
     var rects = [], k;
     for (k = 0; k < 9; k++) rects.push(cells[k].el.getBoundingClientRect());
     for (k = 0; k < out.moves.length; k++) {
@@ -293,33 +285,100 @@
     await afterJudge(out);
   }
 
-  /* ---------- 开局选幸运色 ---------- */
+  /* ---------- 皮肤 ---------- */
+  function paintMascots() {
+    var ms = document.querySelectorAll('.home__mascot');
+    for (var i = 0; i < ms.length; i++) Skin.paint(ms[i], parseInt(ms[i].getAttribute('data-item'), 10));
+    $('btn-skins').textContent = '皮肤：' + Skin.get().name;
+    $('lucky-title').textContent = '选一只幸运' + Skin.get().noun;
+  }
+
+  function buildSkinList() {
+    var list = $('skin-list');
+    list.innerHTML = '';
+    var skins = Skin.list();
+    var cur = Skin.get();
+    for (var i = 0; i < skins.length; i++) {
+      var s = skins[i];
+      var item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'skin-item' + (s === cur ? ' is-active' : '');
+      item.setAttribute('data-skin', s.id);
+      var previews = document.createElement('div');
+      previews.className = 'skin-item__previews';
+      for (var p = 0; p < 3; p++) {
+        var sp = document.createElement('div');
+        Skin.paint(sp, p * 3, s);
+        previews.appendChild(sp);
+      }
+      var text = document.createElement('div');
+      text.className = 'skin-item__text';
+      var name = document.createElement('span');
+      name.className = 'skin-item__name';
+      name.textContent = s.name;
+      var meta = document.createElement('span');
+      meta.className = 'skin-item__meta';
+      meta.textContent = s.items[0].name + '、' + s.items[1].name + '、' + s.items[2].name + ' 等 9 款';
+      text.appendChild(name);
+      text.appendChild(meta);
+      var check = document.createElement('span');
+      check.className = 'skin-item__check';
+      check.textContent = '✓';
+      item.appendChild(previews);
+      item.appendChild(text);
+      item.appendChild(check);
+      list.appendChild(item);
+    }
+  }
+
+  $('skin-list').addEventListener('click', function (e) {
+    var t = e.target;
+    while (t && t !== this && !(t.getAttribute && t.getAttribute('data-skin'))) t = t.parentNode;
+    if (!t || t === this) return;
+    if (Skin.set(t.getAttribute('data-skin'))) {
+      buildSkinList();
+      Skin.preload();
+    }
+  });
+
+  Skin.onChange(function () {
+    paintMascots();
+    luckyGridBuilt = false;
+    if (state) renderBoard(state.board);
+  });
+
+  /* ---------- 开局选幸运款 ---------- */
+  var luckyGridBuilt = false;
+
   function buildLuckyGrid() {
     var grid = $('lucky-grid');
-    if (grid.childNodes.length) return;
+    if (luckyGridBuilt) return;
+    grid.innerHTML = '';
     for (var c = 0; c < 9; c++) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'lucky-opt';
-      btn.setAttribute('aria-label', COLOR_NAMES[c] + '色乌龟');
+      btn.setAttribute('aria-label', Skin.itemName(c));
       btn.setAttribute('data-color', c);
-      var svg = document.createElementNS(SVG_NS, 'svg');
-      svg.setAttribute('class', 'turtle turtle--c' + c);
-      var use = document.createElementNS(SVG_NS, 'use');
-      use.setAttributeNS(XLINK_NS, 'xlink:href', '#t-turtle');
-      use.setAttribute('href', '#t-turtle');
-      svg.appendChild(use);
-      btn.appendChild(svg);
+      var sp = document.createElement('div');
+      Skin.paint(sp, c);
+      btn.appendChild(sp);
+      var nm = document.createElement('span');
+      nm.className = 'lucky-opt__name';
+      nm.textContent = Skin.itemName(c);
+      btn.appendChild(nm);
       grid.appendChild(btn);
     }
-    grid.addEventListener('click', function (e) {
-      var t = e.target;
-      while (t && t !== grid && !(t.getAttribute && t.getAttribute('data-color') !== null)) t = t.parentNode;
-      if (!t || t === grid) return;
-      setOverlay('lucky', false);
-      startRun(parseInt(t.getAttribute('data-color'), 10));
-    });
+    luckyGridBuilt = true;
   }
+
+  $('lucky-grid').addEventListener('click', function (e) {
+    var t = e.target;
+    while (t && t !== this && !(t.getAttribute && t.getAttribute('data-color') !== null)) t = t.parentNode;
+    if (!t || t === this) return;
+    setOverlay('lucky', false);
+    startRun(parseInt(t.getAttribute('data-color'), 10));
+  });
 
   function openLuckyPicker() {
     buildLuckyGrid();
@@ -331,7 +390,8 @@
   function startRun(lucky) {
     state = E.startRun(CONFIG);
     E.setLucky(state, lucky);
-    $('lucky-pill-turtle').setAttribute('class', 'turtle lucky-pill__turtle turtle--c' + lucky);
+    Skin.paint($('lucky-pill-sprite'), lucky);
+    $('lucky-pill-note').textContent = Skin.itemName(lucky) + ' · 消除时每只 +1';
     buildBoard();
     renderBoard(state.board);
     renderHud();
@@ -366,15 +426,11 @@
     $('result-reason').textContent = reasonText;
     var luckyEl = $('result-lucky');
     luckyEl.innerHTML = '';
-    luckyEl.appendChild(document.createTextNode('幸运色'));
-    var luckySvg = document.createElementNS(SVG_NS, 'svg');
-    luckySvg.setAttribute('class', 'turtle turtle--c' + state.lucky);
-    var luckyUse = document.createElementNS(SVG_NS, 'use');
-    luckyUse.setAttributeNS(XLINK_NS, 'xlink:href', '#t-turtle');
-    luckyUse.setAttribute('href', '#t-turtle');
-    luckySvg.appendChild(luckyUse);
-    luckyEl.appendChild(luckySvg);
-    luckyEl.appendChild(document.createTextNode('消除 ' + state.counts.lucky + ' 只，加成 +' + lastStats.luckyBonus));
+    luckyEl.appendChild(document.createTextNode('幸运款'));
+    var sp = document.createElement('div');
+    Skin.paint(sp, state.lucky);
+    luckyEl.appendChild(sp);
+    luckyEl.appendChild(document.createTextNode(Skin.itemName(state.lucky) + ' 消除 ' + state.counts.lucky + ' 只，加成 +' + lastStats.luckyBonus));
     $('result-rounds').textContent = lastStats.rounds;
     $('result-earned').textContent = lastStats.earned;
     $('result-best-round').textContent = lastStats.bestRound;
@@ -401,8 +457,8 @@
     if (!lastStats) return;
     var btn = $('btn-share');
     btn.disabled = true;
-    var canvas = S.renderCard(lastStats);
-    var r = await S.saveToAlbum(canvas);
+    var card = await S.buildCard(lastStats);
+    var r = await S.saveToAlbum(card.dataUrl);
     $('share-img').src = r.dataUrl;
     $('share-hint').textContent = r.msg;
     setOverlay('share-preview', true);
@@ -430,12 +486,16 @@
   $('btn-share-close').addEventListener('click', function () { setOverlay('share-preview', false); });
   $('btn-rules').addEventListener('click', function () { setOverlay('rules', true); });
   $('btn-rules-close').addEventListener('click', function () { setOverlay('rules', false); });
+  $('btn-skins').addEventListener('click', function () { buildSkinList(); setOverlay('skins', true); });
+  $('btn-skins-close').addEventListener('click', function () { setOverlay('skins', false); });
 
   /* ---------- 启动 ---------- */
   renderBest();
   buildBoard();
+  paintMascots();
+  Skin.preload();
   showScreen('home');
 
   // 调试钩子（不影响运行）
-  window.TTDDP = { getState: function () { return state; }, config: CONFIG, colorNames: COLOR_NAMES };
+  window.TTDDP = { getState: function () { return state; }, config: CONFIG };
 })();

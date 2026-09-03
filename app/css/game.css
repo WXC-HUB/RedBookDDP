@@ -21,6 +21,13 @@
 }
 
 .turtle { display: block; width: 100%; height: 100%; }
+
+/* 通用精灵容器：img（图片套系）与 svg（矢量套系）二选一显示 */
+.sprite { display: block; position: relative; width: 100%; height: 100%; }
+.sprite__img { display: none; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.sprite__svg { display: none; }
+.sprite--image .sprite__img { display: block; }
+.sprite--svg .sprite__svg { display: block; }
 .turtle--c0 { color: var(--c0); } .turtle--c1 { color: var(--c1); } .turtle--c2 { color: var(--c2); }
 .turtle--c3 { color: var(--c3); } .turtle--c4 { color: var(--c4); } .turtle--c5 { color: var(--c5); }
 .turtle--c6 { color: var(--c6); } .turtle--c7 { color: var(--c7); } .turtle--c8 { color: var(--c8); }
@@ -71,11 +78,13 @@
     radial-gradient(circle at 80% 85%, rgba(105, 219, 124, 0.35) 0, rgba(105, 219, 124, 0) 45%),
     #e9f6ee;
 }
-.home__logo { position: relative; width: 220px; height: 150px; margin-bottom: 8px; }
-.home__turtle { position: absolute; width: 96px; height: 96px; }
-.home__turtle--1 { left: 0; top: 30px; transform: rotate(-18deg); animation: bob 2.6s ease-in-out infinite; }
-.home__turtle--2 { left: 62px; top: 0; width: 110px; height: 110px; animation: bob 2.6s ease-in-out infinite 0.4s; }
-.home__turtle--3 { right: 0; top: 40px; transform: rotate(18deg); animation: bob 2.6s ease-in-out infinite 0.8s; }
+.home__logo { position: relative; width: 240px; height: 160px; margin-bottom: 8px; }
+.home__mascot { position: absolute; width: 104px; height: 104px; }
+.home__mascot--1 { left: 0; top: 36px; transform: rotate(-12deg); animation: bob 2.6s ease-in-out infinite; }
+.home__mascot--2 { left: 62px; top: 0; width: 120px; height: 120px; z-index: 1; animation: bob 2.6s ease-in-out infinite 0.4s; }
+.home__mascot--3 { right: 0; top: 44px; transform: rotate(12deg); animation: bob 2.6s ease-in-out infinite 0.8s; }
+.home__links { display: flex; justify-content: center; }
+.home__links .btn + .btn { margin-left: 4px; }
 @keyframes bob {
   0%, 100% { margin-top: 0; }
   50% { margin-top: -8px; }
@@ -189,7 +198,7 @@
   box-shadow: 0 3px 0 rgba(31, 58, 45, 0.1);
 }
 .lucky-pill__label { font-size: 13px; font-weight: 700; color: var(--ink); }
-.lucky-pill__turtle { width: 26px; height: 26px; margin: 0 6px; }
+.lucky-pill__sprite { width: 28px; height: 28px; margin: 0 6px; }
 .lucky-pill__note { font-size: 12px; color: var(--ink-soft); }
 .cell.is-lucky::after {
   content: '★'; position: absolute; top: -4px; right: -4px;
@@ -207,10 +216,36 @@
   transition: transform 0.08s ease;
 }
 .lucky-opt::before { content: ''; display: block; padding-top: 100%; }
-.lucky-opt .turtle { position: absolute; top: 10%; left: 10%; width: 80%; height: 80%; }
+.lucky-opt .sprite { position: absolute; top: 8%; left: 8%; width: 84%; height: 84%; }
+.lucky-opt__name {
+  position: absolute; left: 0; right: 0; bottom: 4px; font-size: 11px; color: var(--ink-soft);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none;
+}
 .lucky-opt:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(31, 58, 45, 0.1); }
 .banner__lucky { display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--ink-soft); margin-bottom: 4px; }
-.banner__lucky .turtle { width: 22px; height: 22px; margin: 0 4px; }
+.banner__lucky .sprite { width: 24px; height: 24px; margin: 0 4px; }
+
+/* 皮肤套系列表 */
+.skin-list { margin-bottom: 14px; }
+.skin-item {
+  -webkit-appearance: none; appearance: none; border: 0; cursor: pointer; font: inherit; text-align: left;
+  display: flex; align-items: center; width: 100%; padding: 10px 12px; border-radius: 16px;
+  background: #f1f8f4; color: var(--ink); position: relative;
+  box-shadow: 0 0 0 2px transparent inset;
+}
+.skin-item + .skin-item { margin-top: 10px; }
+.skin-item.is-active { box-shadow: 0 0 0 3px var(--accent) inset; background: #fff; }
+.skin-item__previews { display: flex; flex-shrink: 0; }
+.skin-item__previews .sprite { width: 44px; height: 44px; }
+.skin-item__previews .sprite + .sprite { margin-left: 4px; }
+.skin-item__text { margin-left: 12px; min-width: 0; }
+.skin-item__name { font-size: 16px; font-weight: 800; display: block; }
+.skin-item__meta { font-size: 12px; color: var(--ink-soft); display: block; margin-top: 2px; }
+.skin-item__check {
+  display: none; margin-left: auto; width: 24px; height: 24px; border-radius: 50%; background: var(--accent);
+  color: #fff; font-size: 14px; line-height: 24px; text-align: center; flex-shrink: 0;
+}
+.skin-item.is-active .skin-item__check { display: block; }
 
 /* 摇晃后的位移（FLIP） */
 .cell__inner.is-moving { transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.1); }
