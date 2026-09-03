@@ -33,15 +33,23 @@ body { background: var(--paper); color: var(--ink); }
 .turtle--c3 { color: var(--c3); } .turtle--c4 { color: var(--c4); } .turtle--c5 { color: var(--c5); }
 .turtle--c6 { color: var(--c6); } .turtle--c7 { color: var(--c7); } .turtle--c8 { color: var(--c8); }
 
-/* 通用装饰：格纹 */
-.checker {
-  background-color: var(--paper);
+/* 通用装饰：滚动格纹（伪元素加宽两格，transform 平移一个周期后无缝衔接） */
+.checker { position: relative; overflow: hidden; background: var(--paper); }
+.checker::before {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 0;
+  width: calc(100% + 88px);
   background-image:
     linear-gradient(45deg, var(--sage) 25%, transparent 25%, transparent 75%, var(--sage) 75%),
     linear-gradient(45deg, var(--sage) 25%, transparent 25%, transparent 75%, var(--sage) 75%);
   background-size: 44px 44px;
   background-position: 0 0, 22px 22px;
+  animation: checker-scroll 2.4s linear infinite;
+  will-change: transform;
 }
+.checker--sm::before { width: calc(100% + 44px); background-size: 22px 22px; background-position: 0 0, 11px 11px; animation-name: checker-scroll-sm; }
+@keyframes checker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-88px); } }
+@keyframes checker-scroll-sm { 0% { transform: translateX(0); } 100% { transform: translateX(-44px); } }
+@media (prefers-reduced-motion: reduce) { .checker::before { animation: none; } }
 
 /* ---------- 按钮 ---------- */
 .btn {
@@ -339,14 +347,9 @@ body { background: var(--paper); color: var(--ink); }
   display: flex; flex-direction: column; align-items: center;
   position: relative;
 }
-.dock::after {
-  content: ''; display: block; width: 100vw; margin-top: 12px;
+.dock .checker {
+  width: 100vw; margin-top: 12px;
   height: 22px; height: calc(22px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
-  background-image:
-    linear-gradient(45deg, var(--sage) 25%, transparent 25%, transparent 75%, var(--sage) 75%),
-    linear-gradient(45deg, var(--sage) 25%, transparent 25%, transparent 75%, var(--sage) 75%);
-  background-size: 22px 22px;
-  background-position: 0 0, 11px 11px;
 }
 .btn--deal { width: 100%; max-width: 360px; padding: 12px 24px; display: flex; flex-direction: column; align-items: center; }
 
