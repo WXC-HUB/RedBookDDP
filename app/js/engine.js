@@ -38,6 +38,12 @@
     return Math.floor(Math.random() * cfg.colors);
   }
 
+  function zeros(n) {
+    var a = [];
+    for (var i = 0; i < n; i++) a.push(0);
+    return a;
+  }
+
   /* 对子配对：对碰不要求相邻，只要两只同色同时在盘上即可。
    * 每种颜色按格子编号从小到大两两配对，剩余的单只不成对。返回互不共用格子的对子列表。 */
   function pairUp(alive) {
@@ -149,6 +155,7 @@
       spent: 0,
       bestRound: 0,
       counts: { slam: 0, lines: 0, pairs: 0, clear: 0, shakes: 0, lucky: 0 },
+      stash: zeros(cfg.colors), // 暂存区：每种颜色累计被消除的数量
       lucky: null,         // 幸运色索引，开局由玩家选择
       pendingShake: false, // 本轮零消除，等待玩家摇晃
       shakesUsed: 0,       // 本轮已摇晃次数
@@ -158,7 +165,10 @@
 
   /* 判定结果落账到 state；返回是否进入「等待摇晃」 */
   function settle(state, res) {
-    for (var r = 0; r < res.removed.length; r++) state.board[res.removed[r]] = null;
+    for (var r = 0; r < res.removed.length; r++) {
+      state.stash[state.board[res.removed[r]]]++; // 被消除的棋子进暂存区
+      state.board[res.removed[r]] = null;
+    }
     state.packs += res.reward.total;
     state.earned += res.reward.total;
     if (res.reward.total > state.bestRound) state.bestRound = res.reward.total;
@@ -241,6 +251,26 @@
     state.lucky = (color === null || color === undefined) ? null : color;
   }
 
+  /* 得分统计：每种颜色的持有数 = 暂存区 + 盘上剩余；total 即最终得分（不看轮次）。
+   * top：按数量降序（同数按颜色索引升序）取前 topN（默认 3）名，数量为 0 的不计入。 */
+  function tally(state, topN) {
+    var n = state.cfg.colors, counts = state.stash.slice(), i;
+    var stashed = 0, onBoard = 0;
+    for (i = 0; i < n; i++) stashed += counts[i];
+    for (i = 0; i < 9; i++) {
+      if (state.board[i] !== null) { counts[state.board[i]]++; onBoard++; }
+    }
+    var order = [];
+    for (i = 0; i < n; i++) order.push(i);
+    order.sort(function (a, b) { return counts[b] - counts[a] || a - b; });
+    var top = [];
+    var limit = topN || 3;
+    for (i = 0; i < order.length && top.length < limit; i++) {
+      if (counts[order[i]] > 0) top.push({ color: order[i], count: counts[order[i]] });
+    }
+    return { counts: counts, stashed: stashed, onBoard: onBoard, total: stashed + onBoard, top: top };
+  }
+
   var Engine = {
     DEFAULT_CONFIG: DEFAULT_CONFIG,
     LINES: LINES,
@@ -250,6 +280,7 @@
     canEverMatch: canEverMatch,
     startRun: startRun,
     setLucky: setLucky,
+    tally: tally,
     deal: deal,
     shake: shake
   };

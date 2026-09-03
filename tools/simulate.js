@@ -12,7 +12,7 @@ function percentile(sorted, p) {
 }
 
 function simulate(startPacks) {
-  const rounds = [];
+  const rounds = [], scores = [];
   let earned = 0, spent = 0, empty = 0, nomatch = 0;
   const counts = { slam: 0, lines: 0, pairs: 0, clear: 0, shakes: 0 };
   let dealsTotal = 0, cellsFilled = 0;
@@ -27,6 +27,7 @@ function simulate(startPacks) {
       cellsFilled += out.filled.length;
     }
     rounds.push(s.round);
+    scores.push(E.tally(s).total); // 得分 = 暂存区 + 盘上剩余
     earned += s.earned; spent += s.spent;
     if (s.ended === 'empty') empty++; else nomatch++;
     counts.slam += s.counts.slam; counts.lines += s.counts.lines;
@@ -34,9 +35,15 @@ function simulate(startPacks) {
     counts.shakes += s.counts.shakes;
   }
   rounds.sort((a, b) => a - b);
+  scores.sort((a, b) => a - b);
   const mean = rounds.reduce((a, b) => a + b, 0) / runs;
+  const meanScore = scores.reduce((a, b) => a + b, 0) / runs;
   return {
     startPacks,
+    meanScore: meanScore.toFixed(2),
+    scoreP50: percentile(scores, 0.5),
+    scoreP90: percentile(scores, 0.9),
+    scoreMax: scores[scores.length - 1],
     meanRounds: mean.toFixed(2),
     p50: percentile(rounds, 0.5),
     p90: percentile(rounds, 0.9),

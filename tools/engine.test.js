@@ -140,5 +140,33 @@ const s5 = E.startRun({ startPacks: 1, shakeLimit: Infinity });
 E.deal(s5);
 eq('hopeless board ends immediately', s5.ended, 'nomatch');
 
+// 暂存区与得分：被消除的棋子按颜色进 stash；得分 = 暂存区 + 盘上剩余（= 开出的总数）
+const s7 = E.startRun({ startPacks: 20 });
+s7.board = [0, 0, 0, 1, 1, 2, 3, 4, 5]; // 满盘：deal 不填格，只判定
+E.deal(s7);
+eq('stash after line + pair', s7.stash, [3, 2, 0, 0, 0, 0, 0, 0, 0]);
+eq('board keeps the loners', s7.board, [null, null, null, null, null, 2, 3, 4, 5]);
+let t = E.tally(s7);
+eq('tally counts', t.counts, [3, 2, 1, 1, 1, 1, 0, 0, 0]);
+eq('tally total = stashed + onBoard', [t.stashed, t.onBoard, t.total], [5, 4, 9]);
+eq('tally top3', t.top, [{ color: 0, count: 3 }, { color: 1, count: 2 }, { color: 2, count: 1 }]);
+// 同数按颜色索引排序；数量为 0 的不进 top
+const s8 = E.startRun();
+s8.stash = [0, 2, 0, 2, 0, 0, 0, 0, 0];
+t = E.tally(s8);
+eq('tally ties by colour index', t.top, [{ color: 1, count: 2 }, { color: 3, count: 2 }]);
+eq('tally topN', E.tally(s8, 1).top.length, 1);
+// 整局跑完：得分恒等于开出的卡包数
+const s9 = E.startRun({ startPacks: 20 });
+E.setLucky(s9, 0);
+while (!s9.ended) { if (s9.pendingShake) E.shake(s9); else if (!E.deal(s9)) break; }
+eq('score equals spent', E.tally(s9).total, s9.spent);
+// 摇晃后的消除也进暂存区
+const s10 = E.startRun({ startPacks: 2 });
+s10.board = [4, null, null, null, null, null, null, null, 4];
+s10.pendingShake = true;
+E.shake(s10);
+eq('shake removal goes to stash', s10.stash[4], 2);
+
 console.log(fails ? `${fails} FAILED` : 'ALL PASS');
 process.exit(fails ? 1 : 0);

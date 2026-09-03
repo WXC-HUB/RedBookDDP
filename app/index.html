@@ -69,7 +69,7 @@
           <span class="hero-btn__main">开始游戏</span>
           <span class="hero-btn__sub">Open a pack, match a pair!</span>
         </button>
-        <p class="home__record">最长纪录 <b id="best-rounds">0</b> 轮</p>
+        <p class="home__record">最高纪录 <b id="best-score">0</b> 只</p>
       </div>
 
       <nav class="home__nav">
@@ -97,7 +97,7 @@
         <span class="hud__back-icon">‹</span>
       </button>
       <div class="hud__stat">
-        <span class="hud__label">第</span><span class="hud__num" id="hud-round">0</span><span class="hud__label">轮</span>
+        <span class="hud__label">暂存</span><span class="hud__num" id="hud-stash">0</span><span class="hud__label">只</span>
       </div>
       <div class="hud__stat hud__stat--packs" id="hud-packs-wrap">
         <span class="hud__pack-icon"></span>
@@ -109,7 +109,7 @@
       </div>
     </header>
 
-    <div class="ticker" id="ticker"><span class="ticker__tag">TIPS</span><span class="ticker__text" id="ticker-text">点击「发牌」开始</span></div>
+    <div class="ticker" id="ticker"><span class="ticker__tag"><span class="ticker__live"></span>快讯</span><div class="ticker__viewport" id="ticker-viewport"><div class="ticker__track" id="ticker-text"></div></div></div>
 
     <main class="stage">
       <div class="lucky-pill" id="lucky-pill">
@@ -126,6 +126,10 @@
             <span class="btn__sub">打乱位置，重新判定</span>
           </button>
         </div>
+      </div>
+      <div class="stash" id="stash" aria-label="暂存区">
+        <span class="stash__tag">暂存</span>
+        <div class="stash__items" id="stash-items"></div>
       </div>
     </main>
 
@@ -146,12 +150,14 @@
     <p class="banner__reason" id="result-reason"></p>
     <p class="banner__lucky" id="result-lucky"></p>
     <div class="banner__hero">
-      <span class="banner__hero-num" id="result-rounds">0</span>
-      <span class="banner__hero-label">轮</span>
+      <span class="banner__hero-num" id="result-score">0</span>
+      <span class="banner__hero-label">只</span>
     </div>
+    <p class="banner__breakdown" id="result-breakdown"></p>
+    <div class="banner__top3" id="result-top3"></div>
     <div class="banner__grid">
-      <div class="banner__cell"><span class="banner__num" id="result-earned">0</span><span class="banner__label">累计赚取</span></div>
-      <div class="banner__cell"><span class="banner__num" id="result-best-round">0</span><span class="banner__label">最高单轮</span></div>
+      <div class="banner__cell"><span class="banner__num" id="result-rounds">0</span><span class="banner__label">轮次</span></div>
+      <div class="banner__cell"><span class="banner__num" id="result-earned">0</span><span class="banner__label">卡包赚取</span></div>
       <div class="banner__cell"><span class="banner__num" id="result-lines">0</span><span class="banner__label">连线</span></div>
       <div class="banner__cell"><span class="banner__num" id="result-pairs">0</span><span class="banner__label">对子</span></div>
       <div class="banner__cell"><span class="banner__num" id="result-clears">0</span><span class="banner__label">清空</span></div>
@@ -200,6 +206,7 @@
       <li>判定顺序：大满贯 → 连线 → 对子 → 清空。</li>
       <li>某一轮什么都没消掉，可以<b>摇晃棋盘</b>打乱位置再判定一次。</li>
       <li>摇过还是没消掉，或卡包用完，本局结束。</li>
+      <li><b>得分</b>：被消除的每一只都进「暂存区」。本局结束时，暂存区 + 棋盘上剩余的数量就是最终得分，结算展示收集最多的 Top3 款式。</li>
     </ul>
     <button class="btn btn--primary" id="btn-rules-close" type="button">知道了</button>
   </div>
@@ -216,6 +223,7 @@
 
 <script src="./js/engine.js"></script>
 <script src="./js/skins.js"></script>
+<script src="./js/fx.js"></script>
 <script src="./js/share.js"></script>
 <script src="./js/app.js"></script>
 </body>

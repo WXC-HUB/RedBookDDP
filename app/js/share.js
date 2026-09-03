@@ -106,9 +106,9 @@
 
     // 白卡
     ctx.fillStyle = '#93ad7f';
-    roundRect(ctx, 84, 412, 732, 622, 26); ctx.fill();
+    roundRect(ctx, 84, 412, 732, 666, 26); ctx.fill();
     ctx.fillStyle = '#f4e7cc';
-    roundRect(ctx, 92, 420, 716, 606, 20); ctx.fill();
+    roundRect(ctx, 92, 420, 716, 650, 20); ctx.fill();
     // 结果标题带
     ctx.fillStyle = '#2e2d28';
     roundRect(ctx, W / 2 - 120, 396, 240, 52, 26); ctx.fill();
@@ -116,56 +116,92 @@
     ctx.font = '900 26px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
     ctx.fillText('RUN 结束', W / 2, 432);
 
+    // 大数字：最终得分（只）= 暂存区 + 盘上剩余
+    var numFont = '900 170px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    var unitFont = '700 44px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    var numStr = String(stats.score);
+    ctx.font = numFont;
+    var nw = ctx.measureText(numStr).width;
+    ctx.font = unitFont;
+    var uw = ctx.measureText('只').width;
+    var x0 = W / 2 - (nw + 14 + uw) / 2;
+    ctx.textAlign = 'left';
     ctx.fillStyle = '#d8552c';
-    ctx.font = '900 200px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
-    ctx.fillText(String(stats.rounds), W / 2 - 40, 640);
-    ctx.font = '700 44px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.font = numFont;
+    ctx.fillText(numStr, x0, 606);
     ctx.fillStyle = '#2e2d28';
-    ctx.fillText('轮', W / 2 + 150, 640);
-    ctx.font = 'italic 500 28px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.font = unitFont;
+    ctx.fillText('只', x0 + nw + 14, 606);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#5f7c4b';
+    ctx.font = '700 26px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.fillText('暂存区 ' + stats.stashed + ' 只 + 棋盘剩余 ' + stats.onBoard + ' 只', W / 2, 652);
+    ctx.font = 'italic 500 26px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
     ctx.fillStyle = '#6e6c62';
-    ctx.fillText(stats.reasonText, W / 2, 700);
+    ctx.fillText(stats.reasonText, W / 2, 690);
 
-    var items = [
-      ['累计赚取', stats.earned], ['最高单轮', stats.bestRound],
-      ['连线', stats.lines], ['对子', stats.pairs],
-      ['清空', stats.clears], ['大满贯', stats.slams]
-    ];
-    var cellW = 210, cellH = 120, gx = 120, gy = 750, gap = 20;
-    for (var k = 0; k < items.length; k++) {
-      var cx = gx + (k % 3) * (cellW + gap), cy = gy + Math.floor(k / 3) * (cellH + gap);
-      ctx.fillStyle = '#93ad7f';
-      roundRect(ctx, cx, cy, cellW, cellH, 14); ctx.fill();
+    // Top3：持有数量最多的三款
+    var top = stats.top || [];
+    var tw = 210, th = 180, tgap = 20, ty = 726;
+    var tx0 = W / 2 - (top.length * tw + (top.length - 1) * tgap) / 2;
+    for (var k = 0; k < top.length; k++) {
+      var tx = tx0 + k * (tw + tgap), first = k === 0;
+      ctx.fillStyle = first ? '#d8552c' : '#93ad7f';
+      roundRect(ctx, tx, ty, tw, th, 16); ctx.fill();
       ctx.fillStyle = '#ece0c0';
-      roundRect(ctx, cx + 3, cy + 3, cellW - 6, cellH - 6, 12); ctx.fill();
-      ctx.fillStyle = '#2e2d28';
-      ctx.font = '800 46px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
-      ctx.fillText(String(items[k][1]), cx + cellW / 2, cy + 62);
+      roundRect(ctx, tx + 3, ty + 3, tw - 6, th - 6, 14); ctx.fill();
+      ctx.fillStyle = first ? '#d8552c' : '#2e2d28';
+      roundRect(ctx, tx + tw / 2 - 44, ty - 14, 88, 28, 14); ctx.fill();
+      ctx.fillStyle = '#f4e7cc';
+      ctx.font = '900 16px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.fillText('TOP ' + (k + 1), tx + tw / 2, ty + 6);
+      drawItem(ctx, top[k].color, tx + tw / 2, ty + 74, 86, 0, skin, images);
+      ctx.fillStyle = first ? '#d8552c' : '#2e2d28';
+      ctx.font = '900 38px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.fillText(String(top[k].count), tx + tw / 2, ty + 146);
       ctx.fillStyle = '#5f7c4b';
-      ctx.font = '700 22px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
-      ctx.fillText(items[k][0], cx + cellW / 2, cy + 100);
+      ctx.font = '700 18px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.fillText(Skin.itemName(top[k].color), tx + tw / 2, ty + 170);
+    }
+
+    // 过程数据一行
+    var items = [['轮次', stats.rounds], ['卡包赚取', stats.earned], ['连线', stats.lines], ['对子', stats.pairs]];
+    var cellW = 168, cellH = 84, gap = 12, gy = 928;
+    var gx = W / 2 - (items.length * cellW + (items.length - 1) * gap) / 2;
+    for (k = 0; k < items.length; k++) {
+      var cx = gx + k * (cellW + gap);
+      ctx.fillStyle = '#93ad7f';
+      roundRect(ctx, cx, gy, cellW, cellH, 14); ctx.fill();
+      ctx.fillStyle = '#ece0c0';
+      roundRect(ctx, cx + 3, gy + 3, cellW - 6, cellH - 6, 12); ctx.fill();
+      ctx.fillStyle = '#2e2d28';
+      ctx.font = '800 34px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.fillText(String(items[k][1]), cx + cellW / 2, gy + 44);
+      ctx.fillStyle = '#5f7c4b';
+      ctx.font = '700 18px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.fillText(items[k][0], cx + cellW / 2, gy + 72);
     }
 
     if (stats.lucky !== null && stats.lucky !== undefined) {
-      drawItem(ctx, stats.lucky, W / 2 - 150, 1005, 72, 0, skin, images);
+      drawItem(ctx, stats.lucky, W / 2 - 150, 1042, 56, 0, skin, images);
       ctx.fillStyle = '#5f7c4b';
-      ctx.font = '700 26px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.font = '700 24px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText('幸运款 ' + Skin.itemName(stats.lucky) + ' · 加成 +' + stats.luckyBonus, W / 2 - 105, 1014);
+      ctx.fillText('幸运款 ' + Skin.itemName(stats.lucky) + ' · 加成 +' + stats.luckyBonus, W / 2 - 112, 1050);
       ctx.textAlign = 'center';
     }
 
     if (stats.newRecord) {
       ctx.fillStyle = '#d8552c';
-      roundRect(ctx, W / 2 - 130, 1060, 260, 60, 30); ctx.fill();
+      roundRect(ctx, W / 2 - 120, 1088, 240, 44, 22); ctx.fill();
       ctx.fillStyle = '#f4e7cc';
-      ctx.font = '800 30px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
-      ctx.fillText('新纪录！', W / 2, 1101);
+      ctx.font = '800 26px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.fillText('新纪录！', W / 2, 1119);
     }
 
     ctx.fillStyle = '#2e2d28';
-    ctx.font = 'italic 700 24px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
-    ctx.fillText("BUY LIKE THERE'S NO TOMORROW  ·  你能比我撑更多轮吗？", W / 2, 1148);
+    ctx.font = 'italic 700 22px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.fillText("BUY LIKE THERE'S NO TOMORROW  ·  你能比我收集更多吗？", W / 2, 1158);
     return canvas;
   }
 

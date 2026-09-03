@@ -1,6 +1,8 @@
 /* 乌龟对对碰 · 皮肤套系
  * 每个套系提供 9 个「款式」，对应引擎里的 9 个颜色索引 0..8。
  * 新增套系：把 9 张 256×256 透明图放到 app/skins/<id>/1..9.webp，在 SKINS 里加一条即可。
+ * 每个款式可选 fx（消除特效预设名，见 fx.js PRESETS）、color（主题色，用于飘字 / HUD 闪色）、word（飘字口头语）；
+ * 不写则用默认 pop 特效与套系颜色。
  * 经典脚本，挂到 window.TurtleSkin。ES2017 / Chrome 61。 */
 (function (root) {
   'use strict';
@@ -27,15 +29,24 @@
       dir: './skins/cats/',
       ext: '.webp',
       items: [
-        { name: '甜甜圈猫', file: '1' },
-        { name: '码农猫', file: '2' },
-        { name: '音乐猫', file: '3' },
-        { name: '咖啡猫', file: '4' },
-        { name: '摄影猫', file: '5' },
-        { name: '厨师猫', file: '6' },
-        { name: '健身猫', file: '7' },
-        { name: '画家猫', file: '8' },
-        { name: '派对猫', file: '9' }
+        { name: '甜甜圈猫', file: '1', fx: 'donut',   color: '#f06595', word: '啵！',
+          news: { pair: '吃出了隐藏款甜甜圈', line: '包场了整家甜品店' } },
+        { name: '码农猫',   file: '2', fx: 'code',    color: '#2f9e44', word: '</>',
+          news: { pair: '修好了一个史诗级 bug', line: '一键上线零报错' } },
+        { name: '音乐猫',   file: '3', fx: 'music',   color: '#4c6ef5', word: '♪♫',
+          news: { pair: '即兴来了一段 solo', line: '开了场万人演唱会' } },
+        { name: '咖啡猫',   file: '4', fx: 'coffee',  color: '#8d5524', word: '呼~',
+          news: { pair: '拉出了完美拿铁花', line: '连开三家咖啡分店' } },
+        { name: '摄影猫',   file: '5', fx: 'photo',   color: '#495057', word: '咔嚓',
+          news: { pair: '抓拍到了绝美瞬间', line: '个人影展火爆开幕' } },
+        { name: '厨师猫',   file: '6', fx: 'chef',    color: '#f08c00', word: '滋~',
+          news: { pair: '煎出了完美溏心蛋', line: '拿下了米其林三星' } },
+        { name: '健身猫',   file: '7', fx: 'gym',     color: '#e8590c', word: '嘿！',
+          news: { pair: '刷新了深蹲个人纪录', line: '斩获健美大赛冠军' } },
+        { name: '画家猫',   file: '8', fx: 'painter', color: '#ae3ec9', word: '刷~',
+          news: { pair: '画出了稀世珍品', line: '画作拍出了天价' } },
+        { name: '派对猫',   file: '9', fx: 'party',   color: '#f03e3e', word: '砰！',
+          news: { pair: '点燃了全场气氛', line: '办了场通宵狂欢派对' } }
       ]
     }
   ];
@@ -82,6 +93,25 @@
   }
 
   function itemName(idx, skin) { return (skin || current).items[idx].name; }
+
+  /* 某款式的消除特效信息 { id, color, word }，缺省回退到 pop + 套系颜色 */
+  function fx(idx, skin) {
+    skin = skin || current;
+    var it = skin.items[idx] || {};
+    return {
+      id: it.fx || 'pop',
+      color: it.color || (skin.colors && skin.colors[idx]) || '#e8590c',
+      word: it.word || '碰！'
+    };
+  }
+
+  /* 某款式的播报模板 { pair, line }，用于滚动新闻：<款式名> + 模板 */
+  function news(idx, skin) {
+    skin = skin || current;
+    var it = skin.items[idx] || {};
+    var n = it.news || {};
+    return { pair: n.pair || '碰上了同伴', line: n.line || '排成了一条龙' };
+  }
 
   /* 确保容器内有 img + svg 两个子节点（各套系类型复用同一个容器） */
   function mount(container) {
@@ -142,7 +172,7 @@
   root.TurtleSkin = {
     SKINS: SKINS,
     get: get, list: list, set: set, onChange: onChange,
-    src: src, itemName: itemName,
+    src: src, itemName: itemName, fx: fx, news: news,
     mount: mount, paint: paint, preload: preload
   };
 })(window);
