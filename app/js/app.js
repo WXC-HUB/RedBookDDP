@@ -56,9 +56,8 @@
   }
   var best = loadBest();
   function renderBest() {
-    $('best-rounds').textContent = best.rounds;
-    $('best-earned').textContent = best.earned;
-    $('best-runs').textContent = best.runs;
+    var map = { 'best-rounds': best.rounds, 'best-earned': best.earned, 'best-runs': best.runs };
+    for (var id in map) { var el = $(id); if (el) el.textContent = map[id]; }
   }
 
   /* ---------- 屏幕与覆盖层 ---------- */
@@ -318,7 +317,7 @@
   function paintMascots() {
     var ms = document.querySelectorAll('.home__mascot');
     for (var i = 0; i < ms.length; i++) Skin.paint(ms[i], parseInt(ms[i].getAttribute('data-item'), 10));
-    $('btn-skins').textContent = '皮肤：' + Skin.get().name;
+    $('btn-skins').textContent = '皮肤 · ' + Skin.get().name;
     $('lucky-title').textContent = '选一只幸运' + Skin.get().noun;
   }
 
