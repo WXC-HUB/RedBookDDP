@@ -19,19 +19,6 @@
     [0, 4, 8], [2, 4, 6]
   ];
 
-  // 八方向相邻格对 (i < j)
-  var ADJ = (function () {
-    var list = [];
-    for (var i = 0; i < 9; i++) {
-      for (var j = i + 1; j < 9; j++) {
-        var dr = Math.abs(Math.floor(i / 3) - Math.floor(j / 3));
-        var dc = Math.abs((i % 3) - (j % 3));
-        if (dr <= 1 && dc <= 1) list.push([i, j]);
-      }
-    }
-    return list;
-  })();
-
   function mergeConfig(cfg) {
     var out = { reward: {} };
     var k;
@@ -51,41 +38,21 @@
     return Math.floor(Math.random() * cfg.colors);
   }
 
-  /* 对子最大匹配：edges 为同色相邻格对，返回互不共用格子的最大对子集合 */
-  function maxMatching(edges) {
-    var best = [];
-    function search(used, chosen, startIdx) {
-      // 找到编号最小的、仍有可用边的未匹配格子
-      var v = -1;
-      for (var i = 0; i < 9; i++) {
-        if (used[i]) continue;
-        for (var e = 0; e < edges.length; e++) {
-          if ((edges[e][0] === i && !used[edges[e][1]]) || (edges[e][1] === i && !used[edges[e][0]])) { v = i; break; }
-        }
-        if (v >= 0) break;
-      }
-      if (v < 0) {
-        if (chosen.length > best.length) best = chosen.slice();
-        return;
-      }
-      // 分支 1：v 与某个可用邻居配对
-      for (var e2 = 0; e2 < edges.length; e2++) {
-        var a = edges[e2][0], b = edges[e2][1];
-        var partner = a === v ? b : (b === v ? a : -1);
-        if (partner < 0 || used[partner]) continue;
-        used[v] = used[partner] = true;
-        chosen.push([Math.min(v, partner), Math.max(v, partner)]);
-        search(used, chosen, startIdx);
-        chosen.pop();
-        used[v] = used[partner] = false;
-      }
-      // 分支 2：v 放弃配对
-      used[v] = true;
-      search(used, chosen, startIdx);
-      used[v] = false;
+  /* 对子配对：对碰不要求相邻，只要两只同色同时在盘上即可。
+   * 每种颜色按格子编号从小到大两两配对，剩余的单只不成对。返回互不共用格子的对子列表。 */
+  function pairUp(alive) {
+    var byColor = {}, pairs = [], i, c;
+    for (i = 0; i < 9; i++) {
+      c = alive[i];
+      if (c === null || c === undefined) continue;
+      (byColor[c] || (byColor[c] = [])).push(i);
     }
-    search([false, false, false, false, false, false, false, false, false], [], 0);
-    return best;
+    for (c in byColor) {
+      var list = byColor[c];
+      for (i = 0; i + 1 < list.length; i += 2) pairs.push([list[i], list[i + 1]]);
+    }
+    pairs.sort(function (a, b) { return a[0] - b[0]; });
+    return pairs;
   }
 
   /* 全盘判定。board: 长度 9 的数组，null 为空格，否则为颜色索引。lucky: 幸运色索引或 null。
@@ -133,20 +100,13 @@
       }
       res.reward.lines = res.lines.length * R.line;
 
-      // 3. 对子（最大匹配）
-      var edges = [];
-      for (var e = 0; e < ADJ.length; e++) {
-        var a = ADJ[e][0], b = ADJ[e][1];
-        if (alive[a] !== null && alive[a] === alive[b]) edges.push(ADJ[e]);
+      // 3. 对子（不要求相邻，同色两只即成对）
+      res.pairs = pairUp(alive);
+      for (var p = 0; p < res.pairs.length; p++) {
+        res.removed.push(res.pairs[p][0], res.pairs[p][1]);
+        alive[res.pairs[p][0]] = alive[res.pairs[p][1]] = null;
       }
-      if (edges.length) {
-        res.pairs = maxMatching(edges);
-        for (var p = 0; p < res.pairs.length; p++) {
-          res.removed.push(res.pairs[p][0], res.pairs[p][1]);
-          alive[res.pairs[p][0]] = alive[res.pairs[p][1]] = null;
-        }
-        res.reward.pairs = res.pairs.length * R.pair;
-      }
+      res.reward.pairs = res.pairs.length * R.pair;
     }
 
     // 4. 清空
@@ -163,7 +123,9 @@
     return res;
   }
 
-  /* 盘面是否存在任何打乱后可能成立的消除：只要有某颜色 ≥ 2 只即可（两只同色总能摆相邻） */
+  /* 盘面是否存在任何打乱后可能成立的消除：只要有某颜色 ≥ 2 只即可。
+   * 注意：对碰已不要求相邻，一轮零消除意味着盘上颜色两两不同，此时打乱也无法凑出连线，
+   * 所以正常流程下零消除后不会再进入摇晃；本函数保留作为兜底判断。 */
   function canEverMatch(board) {
     var seen = {};
     for (var i = 0; i < 9; i++) {
@@ -282,10 +244,9 @@
   var Engine = {
     DEFAULT_CONFIG: DEFAULT_CONFIG,
     LINES: LINES,
-    ADJ: ADJ,
     mergeConfig: mergeConfig,
     evaluate: evaluate,
-    maxMatching: maxMatching,
+    pairUp: pairUp,
     canEverMatch: canEverMatch,
     startRun: startRun,
     setLucky: setLucky,

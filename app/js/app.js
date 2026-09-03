@@ -12,16 +12,16 @@
   var CONFIG = { startPacks: 20, shakeLimit: 1 };
   var STORAGE_KEY = 'ttddp.best.v1';
 
-  /* 开发开关：自动发牌（不暴露给玩家）
+  /* 开发开关：自动发牌（不暴露给玩家），默认开启
    * 第一次手动发牌后持续自动发牌 / 自动摇晃，直到本局结束。
-   * 开启方式任选：URL 带 ?auto=1（?auto=0 关闭，选择会记住）；或控制台 TTDDP.setAutoDeal(true)。 */
+   * 关闭方式任选：URL 带 ?auto=0（?auto=1 重新开启，选择会记住）；或控制台 TTDDP.setAutoDeal(false)。 */
   var DEV_KEY = 'ttddp.dev.autoDeal';
-  var DEV = { autoDeal: false, autoDelay: 350 };
+  var DEV = { autoDeal: true, autoDelay: 350 };
   (function initDev() {
     try {
       var m = /[?&]auto=([01])/.exec(location.search);
       if (m) localStorage.setItem(DEV_KEY, m[1]);
-      DEV.autoDeal = localStorage.getItem(DEV_KEY) === '1';
+      DEV.autoDeal = localStorage.getItem(DEV_KEY) !== '0';
     } catch (e) { /* ignore */ }
   })();
   function setAutoDeal(on) {

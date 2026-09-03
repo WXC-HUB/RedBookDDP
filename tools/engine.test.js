@@ -28,19 +28,34 @@ r = E.evaluate([0, 0, _, 0, 0, _, _, _, _]);
 eq('2x2 pairs', r.pairs.length, 2);
 eq('2x2 total', r.reward.total, 7);
 
-// 蛇形四连（非直线）：0-1、1-5、5-8 相邻；最大匹配应为 2 对
+// 同色四只（非直线）→ 2 对
 r = E.evaluate([0, 0, _, _, _, 0, _, _, 0]);
-eq('snake pairs (max matching)', r.pairs.length, 2);
+eq('four same colour pairs', r.pairs.length, 2);
+
+// 对碰不要求相邻：两个角同色 → 1 对
+r = E.evaluate([0, _, _, _, _, _, _, _, 0]);
+eq('non-adjacent pair', r.pairs.length, 1);
+eq('non-adjacent pair cells', r.pairs[0], [0, 8]);
+eq('non-adjacent pair total', r.reward.total, 6);
+
+// 同色三只不成线 → 1 对 + 1 只剩下，不清空
+r = E.evaluate([0, _, 0, _, _, _, 0, _, _]);
+eq('three same colour not in line pairs', r.pairs.length, 1);
+eq('three same colour not clear', r.clear, false);
+
+// 同色五只（无成线）→ 2 对
+r = E.evaluate([0, _, 0, 0, _, 0, _, 0, _]);
+eq('five same colour pairs', r.pairs.length, 2);
 
 // 连线优先于对子：一列同色 + 一只同色挂在旁边 → 线消掉后那只孤龟不成对，只有 +5
 r = E.evaluate([0, 0, _, 0, _, _, 0, _, _]);
 eq('line eats neighbour total', r.reward.total, 5);
 eq('line eats neighbour lines', r.lines.length, 1);
 eq('line eats neighbour pairs', r.pairs.length, 0);
-// 一行同色 + 另一色相邻对，且全部消光 → 5 + 1 + 清空 5 = 11
+// 一行同色 + 另一色一对，且全部消光 → 5 + 1 + 清空 5 = 11
 r = E.evaluate([0, 0, 0, 1, 1, _, _, _, _]);
 eq('line plus pair plus clear total', r.reward.total, 11);
-// 一行同色 + 另一色相邻对 + 一只孤龟 → 5 + 1，不清空
+// 一行同色 + 另一色一对 + 一只孤龟 → 5 + 1，不清空
 r = E.evaluate([0, 0, 0, 1, 1, 2, _, _, _]);
 eq('line plus pair total', r.reward.total, 6);
 // 填满后 deal 返回填充快照
@@ -48,11 +63,16 @@ const s0 = E.startRun({ startPacks: 9 });
 const d0 = E.deal(s0);
 eq('deal snapshot has 9 colors', d0.board.filter(function (c) { return c !== null; }).length, 9);
 
-// 无消除：满盘但 0 号色在两个角，不相邻
+// 满盘，0 号色在两个角 → 不相邻也成对，+1
 r = E.evaluate([0, 1, 2, 3, 4, 5, 6, 7, 0]);
+eq('corner pair removed', r.removed.length, 2);
+eq('corner pair total', r.reward.total, 1);
+
+// 无消除：满盘 8 色，且没有任何同色 → 不可能（9 格 9 色是大满贯），改用未满盘全不同色
+r = E.evaluate([0, 1, 2, 3, 4, 5, 6, 7, _]);
 eq('no match', r.removed.length, 0);
 
-// 部分填充：只有两格同色相邻 → 清空 1 + 5
+// 部分填充：只有两格同色 → 清空 1 + 5
 r = E.evaluate([0, 0, _, _, _, _, _, _, _]);
 eq('partial clear', r.reward.total, 6);
 
@@ -71,16 +91,21 @@ const d = E.deal(s);
 eq('partial fill count', d.filled.length, 3);
 eq('round advanced', s.round, 1);
 
-// 两只同色不相邻 → 进入等待摇晃，而不是直接结束
+// 等待摇晃状态下不能发牌；摇晃后两只同色必成对（+1+5 清空）
 const s2 = E.startRun({ startPacks: 2 });
 s2.board = [0, null, null, null, null, null, null, null, 0];
 s2.pendingShake = true;
 eq('deal while pending is null', E.deal(s2), null);
 const sh2 = E.shake(s2);
 eq('shake returns moves', Array.isArray(sh2.moves), true);
-// 摇后要么消掉（+1+5 清空）要么用尽 shakeLimit=1 结束
-eq('shake resolves', sh2.result.removed.length === 2 || s2.ended === 'nomatch', true);
+eq('shake resolves', sh2.result.removed.length, 2);
 eq('shake after resolve is null', E.shake(s2), null);
+
+// 一轮零消除后盘上颜色两两不同 → 不进入摇晃，直接结束
+const s6 = E.startRun({ startPacks: 20, shakeLimit: Infinity });
+s6.board = [0, 1, 2, 3, 4, 5, 6, 7, 0];
+E.deal(s6); // 满盘无空位，只判定
+eq('zero-elim board has no duplicates', new Set(s6.board.filter(c => c !== null)).size, s6.board.filter(c => c !== null).length);
 
 // shake 保持颜色多重集不变
 const s3 = E.startRun({ startPacks: 20 });
