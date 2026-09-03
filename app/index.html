@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>乌龟对对碰</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    html { touch-action: manipulation; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                   "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      background: #e9f6ee;
+      color: #1f3a2d;
+      overflow: hidden;
+    }
+    #app { position: relative; width: 100%; height: 100%; height: 100vh; height: var(--app-height, 100vh); overflow: hidden; }
+    .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; }
+    .screen.is-active { display: flex; }
+  </style>
+  <link rel="stylesheet" href="./css/game.css" />
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
+  <symbol id="t-turtle" viewBox="0 0 100 100">
+    <ellipse cx="22" cy="34" rx="11" ry="7" transform="rotate(-38 22 34)" fill="currentColor" opacity="0.85"/>
+    <ellipse cx="78" cy="34" rx="11" ry="7" transform="rotate(38 78 34)" fill="currentColor" opacity="0.85"/>
+    <ellipse cx="22" cy="74" rx="11" ry="7" transform="rotate(38 22 74)" fill="currentColor" opacity="0.85"/>
+    <ellipse cx="78" cy="74" rx="11" ry="7" transform="rotate(-38 78 74)" fill="currentColor" opacity="0.85"/>
+    <path d="M50 86 L44 97 L56 97 Z" fill="currentColor" opacity="0.85"/>
+    <circle cx="50" cy="17" r="13" fill="currentColor" opacity="0.9"/>
+    <circle cx="45" cy="15" r="2.2" fill="#24332c"/>
+    <circle cx="55" cy="15" r="2.2" fill="#24332c"/>
+    <circle cx="45.8" cy="14.3" r="0.7" fill="#fff"/>
+    <circle cx="55.8" cy="14.3" r="0.7" fill="#fff"/>
+    <path d="M46 21 Q50 24 54 21" stroke="#24332c" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="50" cy="54" rx="32" ry="33" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="50" cy="53" rx="30" ry="31" fill="currentColor"/>
+    <polygon points="50,38 62,45 62,60 50,67 38,60 38,45" fill="rgba(255,255,255,0.32)" stroke="rgba(0,0,0,0.18)" stroke-width="1.5"/>
+    <polygon points="50,25 62,32 62,45 50,38 38,45 38,32" fill="rgba(255,255,255,0.18)" stroke="rgba(0,0,0,0.18)" stroke-width="1.5"/>
+    <polygon points="62,45 74,52 72,64 62,60" fill="rgba(255,255,255,0.18)" stroke="rgba(0,0,0,0.18)" stroke-width="1.5"/>
+    <polygon points="38,45 26,52 28,64 38,60" fill="rgba(255,255,255,0.18)" stroke="rgba(0,0,0,0.18)" stroke-width="1.5"/>
+    <polygon points="50,67 62,60 60,76 50,82 40,76 38,60" fill="rgba(255,255,255,0.18)" stroke="rgba(0,0,0,0.18)" stroke-width="1.5"/>
+    <ellipse cx="40" cy="36" rx="8" ry="4" transform="rotate(-30 40 36)" fill="rgba(255,255,255,0.35)"/>
+  </symbol>
+</svg>
+
+<div id="app">
+
+  <!-- 开始界面 -->
+  <section id="screen-home" class="screen is-active">
+    <div class="home">
+      <div class="home__logo">
+        <svg class="turtle turtle--c0 home__turtle home__turtle--1"><use xlink:href="#t-turtle" href="#t-turtle"/></svg>
+        <svg class="turtle turtle--c3 home__turtle home__turtle--2"><use xlink:href="#t-turtle" href="#t-turtle"/></svg>
+        <svg class="turtle turtle--c6 home__turtle home__turtle--3"><use xlink:href="#t-turtle" href="#t-turtle"/></svg>
+      </div>
+      <h1 class="home__title">乌龟对对碰</h1>
+      <p class="home__sub">开卡包 · 碰同色 · 看你能撑几轮</p>
+
+      <div class="home__best" id="home-best">
+        <div class="best__item"><span class="best__num" id="best-rounds">0</span><span class="best__label">最长轮次</span></div>
+        <div class="best__item"><span class="best__num" id="best-earned">0</span><span class="best__label">最多赚取</span></div>
+        <div class="best__item"><span class="best__num" id="best-runs">0</span><span class="best__label">已开局数</span></div>
+      </div>
+
+      <button class="btn btn--primary btn--big" id="btn-start" type="button">开始游戏</button>
+      <button class="btn btn--ghost" id="btn-rules" type="button">玩法说明</button>
+    </div>
+  </section>
+
+  <!-- 游戏界面 -->
+  <section id="screen-game" class="screen">
+    <header class="hud">
+      <button class="hud__back" id="btn-home-ingame" type="button" aria-label="返回主页">
+        <span class="hud__back-icon">‹</span>
+      </button>
+      <div class="hud__stat">
+        <span class="hud__label">第</span><span class="hud__num" id="hud-round">0</span><span class="hud__label">轮</span>
+      </div>
+      <div class="hud__stat hud__stat--packs" id="hud-packs-wrap">
+        <span class="hud__pack-icon"></span>
+        <span class="hud__num hud__num--big" id="hud-packs">0</span>
+        <span class="hud__label">卡包</span>
+      </div>
+      <div class="hud__stat">
+        <span class="hud__label">已赚</span><span class="hud__num" id="hud-earned">0</span>
+      </div>
+    </header>
+
+    <main class="stage">
+      <div class="lucky-pill" id="lucky-pill">
+        <span class="lucky-pill__label">幸运色</span>
+        <svg class="turtle lucky-pill__turtle" id="lucky-pill-turtle"><use xlink:href="#t-turtle" href="#t-turtle"/></svg>
+        <span class="lucky-pill__note">消除时每只 +1</span>
+      </div>
+      <div class="board-wrap">
+        <div class="board" id="board"></div>
+        <div class="shake" id="shake">
+          <p class="shake__hint">什么都没碰上</p>
+          <button class="btn btn--primary btn--shake" id="btn-shake" type="button">
+            <span class="btn__main">摇晃棋盘</span>
+            <span class="btn__sub">打乱位置，重新判定</span>
+          </button>
+        </div>
+      </div>
+      <div class="ticker" id="ticker"><span class="ticker__text" id="ticker-text">点击「发牌」开始</span></div>
+    </main>
+
+    <footer class="dock">
+      <button class="btn btn--primary btn--deal" id="btn-deal" type="button">
+        <span class="btn__main">发牌</span>
+        <span class="btn__sub" id="deal-cost">用 9 个卡包填满</span>
+      </button>
+    </footer>
+  </section>
+</div>
+
+<!-- 结果横幅 -->
+<div class="overlay" id="result">
+  <div class="banner">
+    <div class="banner__ribbon" id="result-title">RUN 结束</div>
+    <p class="banner__reason" id="result-reason"></p>
+    <p class="banner__lucky" id="result-lucky"></p>
+    <div class="banner__hero">
+      <span class="banner__hero-num" id="result-rounds">0</span>
+      <span class="banner__hero-label">轮</span>
+    </div>
+    <div class="banner__grid">
+      <div class="banner__cell"><span class="banner__num" id="result-earned">0</span><span class="banner__label">累计赚取</span></div>
+      <div class="banner__cell"><span class="banner__num" id="result-best-round">0</span><span class="banner__label">最高单轮</span></div>
+      <div class="banner__cell"><span class="banner__num" id="result-lines">0</span><span class="banner__label">连线</span></div>
+      <div class="banner__cell"><span class="banner__num" id="result-pairs">0</span><span class="banner__label">对子</span></div>
+      <div class="banner__cell"><span class="banner__num" id="result-clears">0</span><span class="banner__label">清空</span></div>
+      <div class="banner__cell"><span class="banner__num" id="result-slams">0</span><span class="banner__label">大满贯</span></div>
+    </div>
+    <div class="banner__new" id="result-new-record">新纪录！</div>
+    <div class="banner__actions">
+      <button class="btn btn--primary" id="btn-again" type="button">再来一局</button>
+      <button class="btn btn--secondary" id="btn-share" type="button">保存战绩图</button>
+      <button class="btn btn--ghost" id="btn-home" type="button">返回主页</button>
+    </div>
+  </div>
+</div>
+
+<!-- 开局选幸运色 -->
+<div class="overlay" id="lucky">
+  <div class="sheet">
+    <h2 class="sheet__title">选一只幸运乌龟</h2>
+    <p class="sheet__sub">这局里每消除一只幸运色乌龟，额外 +1 卡包</p>
+    <div class="lucky-grid" id="lucky-grid"></div>
+    <button class="btn btn--ghost" id="btn-lucky-random" type="button">随便来一只</button>
+  </div>
+</div>
+
+<!-- 玩法说明 -->
+<div class="overlay" id="rules">
+  <div class="sheet">
+    <h2 class="sheet__title">玩法说明</h2>
+    <ul class="sheet__list">
+      <li>每个卡包开出一只随机颜色的乌龟，共 9 种颜色。</li>
+      <li>开局先选一只<b>幸运色</b>乌龟：每消除一只幸运色，额外 +1 卡包。</li>
+      <li>点击「发牌」，用卡包填满九宫格里的空位。</li>
+      <li><b>对子碰</b>：两只同色乌龟相邻（横竖斜都算），消除，+1 卡包。</li>
+      <li><b>连线碰</b>：三只同色连成一线，消除，+5 卡包。</li>
+      <li><b>清空</b>：一轮内把盘面全部消光，额外 +5。</li>
+      <li><b>大满贯</b>：九只乌龟九种颜色，全部消除，额外 +5。</li>
+      <li>判定顺序：大满贯 → 连线 → 对子 → 清空。</li>
+      <li>某一轮什么都没消掉，可以<b>摇晃棋盘</b>打乱位置再判定一次。</li>
+      <li>摇过还是没消掉，或卡包用完，本局结束。</li>
+    </ul>
+    <button class="btn btn--primary" id="btn-rules-close" type="button">知道了</button>
+  </div>
+</div>
+
+<!-- 战绩图预览 -->
+<div class="overlay" id="share-preview">
+  <div class="sheet sheet--share">
+    <img class="share__img" id="share-img" alt="战绩图" />
+    <p class="share__hint" id="share-hint"></p>
+    <button class="btn btn--primary" id="btn-share-close" type="button">关闭</button>
+  </div>
+</div>
+
+<script src="./js/engine.js"></script>
+<script src="./js/share.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>

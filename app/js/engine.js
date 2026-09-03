@@ -1,0 +1,298 @@
+/* 乌龟对对碰 · 规则引擎（纯逻辑，无 DOM）
+ * 经典脚本：挂到 window.TurtleEngine；Node 下通过 module.exports 导出供模拟脚本使用。
+ * 目标基线 ES2017 / Chrome 61。
+ */
+(function (root) {
+  'use strict';
+
+  var DEFAULT_CONFIG = {
+    colors: 9,
+    cells: 9,
+    startPacks: 20,
+    shakeLimit: 1, // 一轮零消除后最多可摇晃次数；用尽仍无消除则 Run 结束。Infinity = 不限
+    reward: { pair: 1, line: 5, clear: 5, slam: 5, lucky: 1 } // lucky：每只被消除的幸运色乌龟额外返还
+  };
+
+  var LINES = [
+    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+    [0, 4, 8], [2, 4, 6]
+  ];
+
+  // 八方向相邻格对 (i < j)
+  var ADJ = (function () {
+    var list = [];
+    for (var i = 0; i < 9; i++) {
+      for (var j = i + 1; j < 9; j++) {
+        var dr = Math.abs(Math.floor(i / 3) - Math.floor(j / 3));
+        var dc = Math.abs((i % 3) - (j % 3));
+        if (dr <= 1 && dc <= 1) list.push([i, j]);
+      }
+    }
+    return list;
+  })();
+
+  function mergeConfig(cfg) {
+    var out = { reward: {} };
+    var k;
+    for (k in DEFAULT_CONFIG) if (k !== 'reward') out[k] = DEFAULT_CONFIG[k];
+    for (k in DEFAULT_CONFIG.reward) out.reward[k] = DEFAULT_CONFIG.reward[k];
+    if (cfg) {
+      for (k in cfg) {
+        if (k === 'reward') continue;
+        out[k] = cfg[k];
+      }
+      if (cfg.reward) for (k in cfg.reward) out.reward[k] = cfg.reward[k];
+    }
+    return out;
+  }
+
+  function randomColor(cfg) {
+    return Math.floor(Math.random() * cfg.colors);
+  }
+
+  /* 对子最大匹配：edges 为同色相邻格对，返回互不共用格子的最大对子集合 */
+  function maxMatching(edges) {
+    var best = [];
+    function search(used, chosen, startIdx) {
+      // 找到编号最小的、仍有可用边的未匹配格子
+      var v = -1;
+      for (var i = 0; i < 9; i++) {
+        if (used[i]) continue;
+        for (var e = 0; e < edges.length; e++) {
+          if ((edges[e][0] === i && !used[edges[e][1]]) || (edges[e][1] === i && !used[edges[e][0]])) { v = i; break; }
+        }
+        if (v >= 0) break;
+      }
+      if (v < 0) {
+        if (chosen.length > best.length) best = chosen.slice();
+        return;
+      }
+      // 分支 1：v 与某个可用邻居配对
+      for (var e2 = 0; e2 < edges.length; e2++) {
+        var a = edges[e2][0], b = edges[e2][1];
+        var partner = a === v ? b : (b === v ? a : -1);
+        if (partner < 0 || used[partner]) continue;
+        used[v] = used[partner] = true;
+        chosen.push([Math.min(v, partner), Math.max(v, partner)]);
+        search(used, chosen, startIdx);
+        chosen.pop();
+        used[v] = used[partner] = false;
+      }
+      // 分支 2：v 放弃配对
+      used[v] = true;
+      search(used, chosen, startIdx);
+      used[v] = false;
+    }
+    search([false, false, false, false, false, false, false, false, false], [], 0);
+    return best;
+  }
+
+  /* 全盘判定。board: 长度 9 的数组，null 为空格，否则为颜色索引。lucky: 幸运色索引或 null。
+   * 顺序：大满贯 → 连线 → 对子 → 清空。前一步消除的格子在后一步视为不存在。
+   * 幸运色：被消除的每只幸运色乌龟额外 +reward.lucky。 */
+  function evaluate(board, cfg, lucky) {
+    cfg = mergeConfig(cfg);
+    var R = cfg.reward;
+    var res = {
+      slam: false, lines: [], pairs: [], clear: false,
+      removed: [],
+      lucky: [], // 被消除的幸运色格子
+      reward: { slam: 0, lines: 0, pairs: 0, clear: 0, lucky: 0, total: 0 }
+    };
+    var filled = 0, i;
+    for (i = 0; i < 9; i++) if (board[i] !== null && board[i] !== undefined) filled++;
+    if (filled === 0) return res;
+
+    var alive = board.slice();
+
+    // 1. 大满贯
+    if (filled === 9) {
+      var seen = {}, distinct = true;
+      for (i = 0; i < 9; i++) { if (seen[board[i]]) { distinct = false; break; } seen[board[i]] = true; }
+      if (distinct) {
+        res.slam = true;
+        res.reward.slam = R.slam;
+        for (i = 0; i < 9; i++) { res.removed.push(i); alive[i] = null; }
+      }
+    }
+
+    if (!res.slam) {
+      // 2. 连线（在同一盘面上一并判定）
+      var l, line;
+      for (l = 0; l < LINES.length; l++) {
+        line = LINES[l];
+        var c = alive[line[0]];
+        if (c !== null && c === alive[line[1]] && c === alive[line[2]]) res.lines.push(line);
+      }
+      for (l = 0; l < res.lines.length; l++) {
+        line = res.lines[l];
+        for (var t = 0; t < 3; t++) {
+          if (alive[line[t]] !== null) { res.removed.push(line[t]); alive[line[t]] = null; }
+        }
+      }
+      res.reward.lines = res.lines.length * R.line;
+
+      // 3. 对子（最大匹配）
+      var edges = [];
+      for (var e = 0; e < ADJ.length; e++) {
+        var a = ADJ[e][0], b = ADJ[e][1];
+        if (alive[a] !== null && alive[a] === alive[b]) edges.push(ADJ[e]);
+      }
+      if (edges.length) {
+        res.pairs = maxMatching(edges);
+        for (var p = 0; p < res.pairs.length; p++) {
+          res.removed.push(res.pairs[p][0], res.pairs[p][1]);
+          alive[res.pairs[p][0]] = alive[res.pairs[p][1]] = null;
+        }
+        res.reward.pairs = res.pairs.length * R.pair;
+      }
+    }
+
+    // 4. 清空
+    if (res.removed.length > 0 && res.removed.length === filled) {
+      res.clear = true;
+      res.reward.clear = R.clear;
+    }
+    // 5. 幸运色加成
+    if (lucky !== null && lucky !== undefined) {
+      for (i = 0; i < res.removed.length; i++) if (board[res.removed[i]] === lucky) res.lucky.push(res.removed[i]);
+      res.reward.lucky = res.lucky.length * R.lucky;
+    }
+    res.reward.total = res.reward.slam + res.reward.lines + res.reward.pairs + res.reward.clear + res.reward.lucky;
+    return res;
+  }
+
+  /* 盘面是否存在任何打乱后可能成立的消除：只要有某颜色 ≥ 2 只即可（两只同色总能摆相邻） */
+  function canEverMatch(board) {
+    var seen = {};
+    for (var i = 0; i < 9; i++) {
+      if (board[i] === null) continue;
+      if (seen[board[i]]) return true;
+      seen[board[i]] = true;
+    }
+    return false;
+  }
+
+  /* ---------- Run 状态机 ---------- */
+
+  function startRun(cfg) {
+    cfg = mergeConfig(cfg);
+    return {
+      cfg: cfg,
+      board: [null, null, null, null, null, null, null, null, null],
+      packs: cfg.startPacks,
+      round: 0,
+      earned: 0,
+      spent: 0,
+      bestRound: 0,
+      counts: { slam: 0, lines: 0, pairs: 0, clear: 0, shakes: 0, lucky: 0 },
+      lucky: null,         // 幸运色索引，开局由玩家选择
+      pendingShake: false, // 本轮零消除，等待玩家摇晃
+      shakesUsed: 0,       // 本轮已摇晃次数
+      ended: null // null | 'empty'（卡包耗尽） | 'nomatch'（摇晃用尽仍零消除）
+    };
+  }
+
+  /* 判定结果落账到 state；返回是否进入「等待摇晃」 */
+  function settle(state, res) {
+    for (var r = 0; r < res.removed.length; r++) state.board[res.removed[r]] = null;
+    state.packs += res.reward.total;
+    state.earned += res.reward.total;
+    if (res.reward.total > state.bestRound) state.bestRound = res.reward.total;
+    if (res.slam) state.counts.slam++;
+    state.counts.lines += res.lines.length;
+    state.counts.pairs += res.pairs.length;
+    if (res.clear) state.counts.clear++;
+    state.counts.lucky += res.lucky.length;
+
+    if (res.removed.length === 0) {
+      // 只有在打乱后有可能消除时才值得摇；孤龟 / 全不同色（未满盘）直接结束
+      if (state.shakesUsed < state.cfg.shakeLimit && canEverMatch(state.board)) {
+        state.pendingShake = true;
+        return true;
+      }
+      state.pendingShake = false;
+      state.ended = 'nomatch';
+      return false;
+    }
+    state.pendingShake = false;
+    if (state.packs <= 0) state.ended = 'empty';
+    return false;
+  }
+
+  /* 执行一轮：填格 → 判定 → 结算。
+   * 返回 { filled, board, result, needShake, ended }；Run 已结束或正在等待摇晃时返回 null */
+  function deal(state) {
+    if (state.ended || state.pendingShake) return null;
+    if (state.packs <= 0) { state.ended = 'empty'; return null; }
+    state.shakesUsed = 0;
+    var filled = [];
+    for (var i = 0; i < 9 && state.packs > 0; i++) {
+      if (state.board[i] === null) {
+        state.board[i] = randomColor(state.cfg);
+        state.packs--;
+        state.spent++;
+        filled.push(i);
+      }
+    }
+    state.round++;
+    var snapshot = state.board.slice(); // 填充后、消除前的盘面，供 UI 播放动画
+    var res = evaluate(state.board, state.cfg, state.lucky);
+    var needShake = settle(state, res);
+    return { filled: filled, board: snapshot, result: res, needShake: needShake, ended: state.ended };
+  }
+
+  /* 摇晃棋盘：随机打乱全部格子（含空格），再判定并结算。
+   * 返回 { moves:[{from,to}], board, result, needShake, ended }；非等待摇晃状态返回 null */
+  function shake(state) {
+    if (state.ended || !state.pendingShake) return null;
+    var perm = [0, 1, 2, 3, 4, 5, 6, 7, 8], i, j, tmp, identity;
+    do {
+      for (i = 8; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1));
+        tmp = perm[i]; perm[i] = perm[j]; perm[j] = tmp;
+      }
+      identity = true;
+      for (i = 0; i < 9; i++) if (perm[i] !== i && state.board[i] !== null) { identity = false; break; }
+    } while (identity);
+
+    var old = state.board.slice();
+    var next = [null, null, null, null, null, null, null, null, null];
+    var moves = [];
+    for (i = 0; i < 9; i++) {
+      next[perm[i]] = old[i];
+      if (old[i] !== null && perm[i] !== i) moves.push({ from: i, to: perm[i] });
+    }
+    state.board = next;
+    state.shakesUsed++;
+    state.counts.shakes++;
+    state.pendingShake = false;
+
+    var snapshot = next.slice();
+    var res = evaluate(state.board, state.cfg, state.lucky);
+    var needShake = settle(state, res);
+    return { moves: moves, board: snapshot, result: res, needShake: needShake, ended: state.ended };
+  }
+
+  function setLucky(state, color) {
+    state.lucky = (color === null || color === undefined) ? null : color;
+  }
+
+  var Engine = {
+    DEFAULT_CONFIG: DEFAULT_CONFIG,
+    LINES: LINES,
+    ADJ: ADJ,
+    mergeConfig: mergeConfig,
+    evaluate: evaluate,
+    maxMatching: maxMatching,
+    canEverMatch: canEverMatch,
+    startRun: startRun,
+    setLucky: setLucky,
+    deal: deal,
+    shake: shake
+  };
+
+  root.TurtleEngine = Engine;
+  if (typeof module !== 'undefined' && module.exports) module.exports = Engine;
+})(typeof window !== 'undefined' ? window : this);
