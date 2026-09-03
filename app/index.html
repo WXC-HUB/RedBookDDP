@@ -63,56 +63,28 @@
         <p class="home__tag"><span class="home__tag-dot"></span><span class="home__tag-text">PAIR &amp; MATCH</span><span class="home__tag-dot"></span></p>
       </header>
 
-      <div class="home__grid">
-        <!-- 上：开始游戏 -->
-        <button class="rcard rcard--start" id="btn-start" type="button">
-          <div class="rcard__body">
-            <div class="rcard__icon slot" data-icon="start"></div>
-            <div class="rcard__text">
-              <span class="rcard__label">开始游戏</span>
-              <span class="rcard__big"><b id="best-rounds">0</b><small>轮 · 最长纪录</small></span>
-            </div>
-          </div>
-          <div class="rcard__band">Open a pack, match a pair!</div>
+      <div class="home__main">
+        <div class="home__hero-slot slot slot--lg" data-icon="start"></div>
+        <button class="hero-btn" id="btn-start" type="button">
+          <span class="hero-btn__main">开始游戏</span>
+          <span class="hero-btn__sub">Open a pack, match a pair!</span>
         </button>
-
-        <div class="home__row">
-          <!-- 左：排行榜（留空） -->
-          <button class="rcard rcard--tall" id="btn-rank" type="button" disabled>
-            <div class="rcard__deco"></div>
-            <div class="rcard__icon slot slot--lg" data-icon="rank"></div>
-            <div class="rcard__text rcard__text--center">
-              <span class="rcard__label">排行榜</span>
-              <span class="rcard__sub">COMING SOON</span>
-            </div>
-          </button>
-
-          <div class="home__col">
-            <!-- 右上：占位 -->
-            <button class="rcard rcard--small" id="btn-slot-a" type="button" disabled>
-              <div class="rcard__deco"></div>
-              <div class="rcard__text rcard__text--center">
-                <span class="rcard__label">占位</span>
-              </div>
-              <div class="rcard__band rcard__band--sm">ONLY THE BEST!</div>
-            </button>
-            <!-- 右下：占位 -->
-            <button class="rcard rcard--small" id="btn-slot-b" type="button" disabled>
-              <div class="rcard__icon slot slot--sm" data-icon="slot-b"></div>
-              <div class="rcard__text rcard__text--center">
-                <span class="rcard__label">占位</span>
-              </div>
-            </button>
-          </div>
-        </div>
+        <p class="home__record">最长纪录 <b id="best-rounds">0</b> 轮</p>
       </div>
 
-      <footer class="home__foot">
-        <div class="home__links">
-          <button class="home__link" id="btn-skins" type="button">皮肤</button>
-          <span class="home__link-sep">·</span>
-          <button class="home__link" id="btn-rules" type="button">玩法说明</button>
+      <nav class="home__nav">
+        <div class="home__nav-row">
+          <button class="tlink tlink--muted" id="btn-rank" type="button" disabled>排行榜</button>
+          <button class="tlink tlink--muted" id="btn-slot-a" type="button" disabled>占位</button>
+          <button class="tlink tlink--muted" id="btn-slot-b" type="button" disabled>占位</button>
         </div>
+        <div class="home__nav-row">
+          <button class="tlink" id="btn-skins" type="button">皮肤</button>
+          <button class="tlink" id="btn-rules" type="button">玩法说明</button>
+        </div>
+      </nav>
+
+      <footer class="home__foot">
         <div class="checker"></div>
       </footer>
     </div>

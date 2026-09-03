@@ -103,73 +103,50 @@ body { background: var(--paper); color: var(--ink); }
 .home__tag-text { font-size: 15px; font-style: italic; font-weight: 700; letter-spacing: 2px; color: var(--sage-deep); margin: 0 10px; }
 .home__tag-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sage); }
 
-.home__grid { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-.home__row { flex: 1; display: flex; min-height: 0; margin-top: 12px; }
-.home__col { flex: 1; display: flex; flex-direction: column; min-width: 0; margin-left: 12px; }
-.home__col .rcard + .rcard { margin-top: 12px; }
-
-/* 复古卡片 */
-.rcard {
-  -webkit-appearance: none; appearance: none; font: inherit; cursor: pointer; text-align: left;
-  position: relative; display: flex; flex-direction: column; overflow: hidden;
-  background: var(--paper); color: var(--moss);
-  border: 3px solid var(--sage); border-radius: 8px;
-  padding: 0;
-  transition: transform 0.08s ease, background-color 0.15s ease;
+/* 主区：一个突出的主按钮 */
+.home__main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; }
+.home__hero-slot { margin-bottom: 22px; }
+.hero-btn {
+  -webkit-appearance: none; appearance: none; border: 0; font: inherit; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center;
+  width: 100%; max-width: 320px; padding: 20px 24px 16px;
+  background: var(--ember); color: var(--paper);
+  border-radius: 999px;
+  box-shadow: 0 6px 0 var(--ember-dark), 0 0 0 3px var(--paper), 0 0 0 6px var(--sage);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
-.rcard:active { transform: scale(0.985); background: var(--paper-2); }
-.rcard[disabled] { cursor: default; }
-.rcard[disabled]:active { transform: none; background: var(--paper); }
-.rcard[disabled] .rcard__label { opacity: 0.75; }
-.rcard--start { flex-shrink: 0; }
-.rcard--tall { flex: 1; align-items: center; justify-content: center; padding: 20px 10px 16px; }
-.rcard--small { flex: 1; align-items: center; justify-content: center; padding: 14px 10px; min-height: 0; }
-.rcard__body { display: flex; align-items: center; padding: 18px 16px; }
-.rcard__text { display: flex; flex-direction: column; min-width: 0; }
-.rcard__text--center { align-items: center; text-align: center; }
-.rcard__body .rcard__text { margin-left: 16px; flex: 1; }
-.rcard__label { font-size: 22px; font-weight: 900; letter-spacing: 1px; color: var(--moss); }
-.rcard--small .rcard__label { font-size: 18px; }
-.rcard__big { display: flex; align-items: baseline; margin-top: 2px; color: var(--sage-deep); }
-.rcard__big b { font-size: 34px; font-weight: 900; line-height: 1; }
-.rcard__big small { font-size: 12px; font-weight: 700; margin-left: 6px; letter-spacing: 1px; }
-.rcard__sub { font-size: 11px; font-style: italic; font-weight: 700; letter-spacing: 2px; color: var(--sage-deep); margin-top: 4px; }
-.rcard__band {
-  width: 100%; background: var(--sage); color: var(--paper);
-  font-size: 15px; font-style: italic; font-weight: 700; letter-spacing: 1px; text-align: center;
-  padding: 7px 10px; margin-top: auto;
-}
-.rcard__band--sm { font-size: 11px; padding: 5px 6px; letter-spacing: 1.5px; }
-.rcard--small .rcard__band { position: absolute; left: 0; right: 0; bottom: 0; }
-.rcard__deco {
-  position: absolute; top: 0; left: 0; right: 0; height: 10px;
-  background:
-    linear-gradient(90deg, var(--sage) 0, var(--sage) 46px, transparent 46px, transparent 54px,
-                    var(--sage) 54px, var(--sage) 62px, transparent 62px, transparent 70px,
-                    var(--sage) 70px, var(--sage) 78px, transparent 78px);
-  background-repeat: no-repeat;
-}
-.rcard__deco::after { content: ''; position: absolute; right: 0; top: 0; width: 22px; height: 10px; background: var(--sage); }
+.hero-btn:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--ember-dark), 0 0 0 3px var(--paper), 0 0 0 6px var(--sage); }
+.hero-btn:focus { outline: none; }
+.hero-btn__main { font-size: 32px; font-weight: 900; letter-spacing: 4px; line-height: 1.1; }
+.hero-btn__sub { font-size: 12px; font-style: italic; font-weight: 700; letter-spacing: 1.5px; opacity: 0.9; margin-top: 6px; }
+.home__record { margin-top: 18px; font-size: 14px; font-style: italic; color: var(--ink-soft); }
+.home__record b { font-style: normal; font-size: 20px; font-weight: 900; color: var(--moss); margin: 0 2px; }
 
 /* 图标留空槽：换成图片后去掉虚线即可 */
 .slot { flex-shrink: 0; width: 84px; height: 84px; border-radius: 12px; border: 2px dashed rgba(125, 154, 106, 0.55); }
-.slot--lg { width: 96px; height: 96px; margin-bottom: 14px; }
-.slot--sm { width: 56px; height: 56px; margin-bottom: 8px; }
+.slot--lg { width: 120px; height: 120px; }
 
-.home__foot { flex-shrink: 0; margin: 12px -18px 0; }
-.home__links { display: flex; justify-content: center; align-items: center; margin-bottom: 10px; }
-.home__link {
+/* 非重点入口：文字 + 下划线 */
+.home__nav { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding: 8px 0 14px; }
+.home__nav-row { display: flex; justify-content: center; align-items: center; }
+.home__nav-row + .home__nav-row { margin-top: 10px; }
+.tlink {
   -webkit-appearance: none; appearance: none; border: 0; background: transparent; font: inherit; cursor: pointer;
-  font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--sage-deep); padding: 4px 8px;
+  padding: 4px 2px; margin: 0 12px;
+  font-size: 15px; font-weight: 700; letter-spacing: 1px; color: var(--moss);
+  border-bottom: 2px solid var(--sage);
+  line-height: 1.3;
 }
-.home__link:active { opacity: 0.6; }
-.home__link-sep { color: var(--sage); }
+.tlink:active { opacity: 0.6; }
+.tlink--muted { color: var(--ink-soft); border-bottom-color: rgba(110, 108, 98, 0.4); cursor: default; }
+.tlink--muted:active { opacity: 1; }
+
+.home__foot { flex-shrink: 0; margin: 0 -18px 0; }
 .home__foot .checker { height: 44px; height: calc(44px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); }
 @media (max-height: 640px) {
   .home__title { font-size: 36px; }
-  .rcard__body { padding: 12px 14px; }
-  .slot { width: 64px; height: 64px; }
-  .slot--lg { width: 72px; height: 72px; }
+  .slot--lg { width: 88px; height: 88px; }
+  .hero-btn__main { font-size: 26px; }
   .home__foot .checker { height: 30px; height: calc(30px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); }
 }
 

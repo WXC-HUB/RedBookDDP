@@ -317,7 +317,7 @@
   function paintMascots() {
     var ms = document.querySelectorAll('.home__mascot');
     for (var i = 0; i < ms.length; i++) Skin.paint(ms[i], parseInt(ms[i].getAttribute('data-item'), 10));
-    $('btn-skins').textContent = '皮肤 · ' + Skin.get().name;
+    $('btn-skins').textContent = '皮肤';
     $('lucky-title').textContent = '选一只幸运' + Skin.get().noun;
   }
 
