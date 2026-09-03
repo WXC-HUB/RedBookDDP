@@ -12,6 +12,25 @@
   var CONFIG = { startPacks: 20, shakeLimit: 1 };
   var STORAGE_KEY = 'ttddp.best.v1';
 
+  /* 开发开关：自动发牌（不暴露给玩家）
+   * 第一次手动发牌后持续自动发牌 / 自动摇晃，直到本局结束。
+   * 开启方式任选：URL 带 ?auto=1（?auto=0 关闭，选择会记住）；或控制台 TTDDP.setAutoDeal(true)。 */
+  var DEV_KEY = 'ttddp.dev.autoDeal';
+  var DEV = { autoDeal: false, autoDelay: 350 };
+  (function initDev() {
+    try {
+      var m = /[?&]auto=([01])/.exec(location.search);
+      if (m) localStorage.setItem(DEV_KEY, m[1]);
+      DEV.autoDeal = localStorage.getItem(DEV_KEY) === '1';
+    } catch (e) { /* ignore */ }
+  })();
+  function setAutoDeal(on) {
+    DEV.autoDeal = !!on;
+    try { localStorage.setItem(DEV_KEY, on ? '1' : '0'); } catch (e) { /* ignore */ }
+    if (state) renderHud();
+    return DEV.autoDeal;
+  }
+
   function $(id) { return document.getElementById(id); }
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
@@ -122,6 +141,7 @@
     var cost = Math.min(empties, state.packs);
     var sub = $('deal-cost');
     if (state.ended) sub.textContent = '本局已结束';
+    else if (DEV.autoDeal && state.round > 0) sub.textContent = '自动发牌中';
     else if (state.pendingShake) sub.textContent = '先摇一摇棋盘';
     else if (cost >= empties) sub.textContent = '用 ' + cost + ' 个卡包填满';
     else sub.textContent = '卡包不足，只能填 ' + cost + ' 格';
@@ -195,10 +215,15 @@
   /* 一次判定结束后的收尾：等待摇晃 / 结束 / 允许下一轮 */
   async function afterJudge(out) {
     renderHud();
+    var runState = state; // 自动模式下延时后核对仍是同一局
     if (out.needShake) {
       setTicker(out.moves ? '摇完还是没碰上，再摇一次' : '什么都没碰上，摇一摇试试', true);
       showShake(true);
       busy = false;
+      if (DEV.autoDeal) {
+        await wait(DEV.autoDelay + 300);
+        if (state === runState && state.pendingShake && !busy) shakeBoard();
+      }
       return;
     }
     busy = false;
@@ -207,6 +232,10 @@
       finishRun();
     } else {
       $('btn-deal').disabled = false;
+      if (DEV.autoDeal) {
+        await wait(DEV.autoDelay);
+        if (state === runState && !state.ended && !state.pendingShake && !busy) playRound();
+      }
     }
   }
 
@@ -497,5 +526,10 @@
   showScreen('home');
 
   // 调试钩子（不影响运行）
-  window.TTDDP = { getState: function () { return state; }, config: CONFIG };
+  window.TTDDP = {
+    getState: function () { return state; },
+    config: CONFIG,
+    dev: DEV,
+    setAutoDeal: setAutoDeal
+  };
 })();
