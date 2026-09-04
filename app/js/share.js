@@ -1,4 +1,4 @@
-/* 乌龟对对碰 · 战绩图（Canvas 2D 渲染）+ JSBridge 存相册
+/* 猫猫对对碰 · 战绩图（Canvas 2D 渲染）+ JSBridge 存相册
  * 仅在 Run 结束后按需调用，不参与首屏。ES2017 / Chrome 61。
  * 依赖 skins.js（window.TurtleSkin）：图片套系直接 drawImage 包内图片；矢量套系用 Canvas 手绘乌龟。 */
 (function (root) {
@@ -99,7 +99,7 @@
     ctx.textAlign = 'center';
     ctx.fillStyle = '#7d9a6a';
     ctx.font = '900 84px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
-    ctx.fillText('乌龟对对碰', W / 2, 300);
+    ctx.fillText('猫猫对对碰', W / 2, 300);
     ctx.font = '500 30px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
     ctx.fillStyle = '#7d9a6a';
     ctx.fillText('•  MY RUN · ' + skin.name + '  •', W / 2, 350);

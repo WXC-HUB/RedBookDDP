@@ -1,4 +1,4 @@
-/* 乌龟对对碰 · 样式（复古双色海报风）
+/* 猫猫对对碰 · 样式（复古双色海报风）
  * 基线 Chrome 61：Flex 间距用 margin，不用 gap；不用 aspect-ratio / clamp / inset / dvh。
  * 安全区：var(--safe-area-inset-*, env(...)) 组合。 */
 
@@ -187,8 +187,8 @@ body { background: var(--paper); color: var(--ink); }
   box-shadow: 0 3px 0 var(--ember-dark);
 }
 .hud__stat--packs .hud__label { opacity: 0.95; }
-.hud__stat--packs.is-bump { animation: bump 0.35s ease; }
-.hud__stat--packs.is-drop { animation: drop 0.35s ease; }
+.hud__stat--packs.is-bump { animation: bump 0.35s ease; animation-duration: calc(0.35s / var(--spd, 1)); }
+.hud__stat--packs.is-drop { animation: drop 0.35s ease; animation-duration: calc(0.35s / var(--spd, 1)); }
 @keyframes bump {
   0% { transform: scale(1); box-shadow: 0 0 0 0 var(--fx, transparent); }
   40% { transform: scale(1.18); box-shadow: 0 0 0 5px var(--fx, transparent); }
@@ -242,7 +242,7 @@ body { background: var(--paper); color: var(--ink); }
 .board-wrap { position: relative; width: 88vw; max-width: 400px; }
 @media (max-height: 640px) { .board-wrap { width: 64vw; max-width: 320px; } }
 @media (max-height: 560px) { .board-wrap { width: 52vw; max-width: 260px; } }
-.board-wrap.is-shaking { animation: board-shake 0.55s ease-in-out; }
+.board-wrap.is-shaking { animation: board-shake 0.55s ease-in-out; animation-duration: calc(0.55s / var(--spd, 1)); }
 @keyframes board-shake {
   0%, 100% { transform: translate(0, 0) rotate(0); }
   15% { transform: translate(-10px, 2px) rotate(-3deg); }
@@ -285,94 +285,70 @@ body { background: var(--paper); color: var(--ink); }
   filter: drop-shadow(4px 5px 0 rgba(46, 45, 40, 0.32));
 }
 /* 发牌：猫猫从卡包位置飞到格子（起点由 JS 用 inline transform 设定，过渡回 CSS 的 scale(1)） */
-.cell__inner.is-flying { transition: transform 0.46s cubic-bezier(0.22, 0.9, 0.3, 1.12); }
-.cell.is-landed .cell__inner { animation: land 0.3s ease-out both; }
+.cell__inner.is-flying { transition: transform 0.46s cubic-bezier(0.22, 0.9, 0.3, 1.12); transition-duration: calc(0.46s / var(--spd, 1)); }
+.cell.is-landed .cell__inner { animation: land 0.3s ease-out both; animation-duration: calc(0.3s / var(--spd, 1)); }
 @keyframes land {
   0% { transform: scale(1.16, 0.84) translateY(6%); }
   55% { transform: scale(0.95, 1.05) translateY(-2%); }
   100% { transform: scale(1); }
 }
 
-/* 卡包：发牌时落在棋盘中央，撕开顶封后猫猫从这里飞出 */
-.pack {
-  position: absolute; left: 50%; top: 50%;
-  width: 34%; padding-top: 44%;
+/* 卡包：竖版票券，发牌时按数量扇形排在棋盘中央；撕下票根后猫猫从票身飞出
+ * 每张票 .tk 由 JS 生成：上 32% 票根 .tk__stub，下 68% 票身 .tk__body，形状用内联 SVG 画（带穿孔缺口与硬投影） */
+.packs { position: absolute; left: 50%; top: 50%; width: 0; height: 0; z-index: 2; pointer-events: none; }
+.tk {
+  position: absolute; left: 0; top: 0;
+  transition: transform 0.32s cubic-bezier(0.2, 1.2, 0.4, 1), opacity 0.2s ease;
+  transition-duration: calc(0.32s / var(--spd, 1)), calc(0.2s / var(--spd, 1));
+  will-change: transform;
+}
+.tk__stub, .tk__body { position: absolute; left: 0; right: 0; }
+.tk__stub { top: 0; height: 32%; transform-origin: 100% 100%; }
+.tk__body { top: 32%; bottom: 0; transform-origin: 50% 50%; }
+.tk svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; display: block; }
+.tk__icon {
+  position: absolute; left: 50%; top: 50%; width: 66%;
   transform: translate(-50%, -50%);
-  z-index: 2; pointer-events: none;
-  display: none;
+  filter: brightness(0) invert(1);
+  opacity: 0.92;
+  pointer-events: none;
 }
-.pack.is-show { display: block; }
-.pack__body {
-  position: absolute; left: 0; right: 0; top: 14%; bottom: 0;
-  background: var(--ember); border: 3px solid var(--ink); border-radius: 8px;
-  box-shadow: 5px 6px 0 rgba(46, 45, 40, 0.32);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+.tk.is-tear .tk__stub { animation: tk-tear 0.36s cubic-bezier(0.3, 0.6, 0.4, 1) both; animation-duration: calc(0.36s / var(--spd, 1)); }
+@keyframes tk-tear {
+  0% { transform: rotate(0) translate(0, 0); opacity: 1; }
+  30% { transform: rotate(10deg) translate(0, -12%); opacity: 1; }
+  100% { transform: rotate(55deg) translate(70%, -160%); opacity: 0; }
 }
-.pack__top {
-  position: absolute; left: 0; right: 0; top: 0; height: 24%;
-  background: var(--ember-dark); border: 3px solid var(--ink); border-bottom: 0; border-radius: 8px 8px 0 0;
-  -webkit-clip-path: polygon(0 0, 100% 0, 100% 68%, 90% 100%, 80% 68%, 70% 100%, 60% 68%, 50% 100%, 40% 68%, 30% 100%, 20% 68%, 10% 100%, 0 68%);
-  clip-path: polygon(0 0, 100% 0, 100% 68%, 90% 100%, 80% 68%, 70% 100%, 60% 68%, 50% 100%, 40% 68%, 30% 100%, 20% 68%, 10% 100%, 0 68%);
-  transform-origin: 20% 100%;
-}
-.pack__band {
-  background: var(--paper); color: var(--ink);
-  font-size: 10px; font-weight: 900; font-style: italic; letter-spacing: 1.5px;
-  padding: 2px 8px; border-radius: 999px;
-}
-.pack__count { color: var(--paper); font-size: 26px; font-weight: 900; font-style: italic; margin-top: 4px; line-height: 1; }
-.pack.is-in { animation: pack-in 0.28s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
-@keyframes pack-in {
-  0% { transform: translate(-50%, -120%) scale(0.5) rotate(-12deg); opacity: 0; }
-  100% { transform: translate(-50%, -50%) scale(1) rotate(0); opacity: 1; }
-}
-.pack.is-tear .pack__top { animation: pack-tear 0.34s cubic-bezier(0.3, 0.6, 0.4, 1) both; }
-@keyframes pack-tear {
-  0% { transform: translate(0, 0) rotate(0); opacity: 1; }
-  30% { transform: translate(6%, -30%) rotate(8deg); opacity: 1; }
-  100% { transform: translate(70%, -180%) rotate(38deg); opacity: 0; }
-}
-.pack.is-tear .pack__body { animation: pack-jerk 0.34s ease-out both; }
-@keyframes pack-jerk {
+.tk.is-tear .tk__body { animation: tk-jerk 0.36s ease-out both; animation-duration: calc(0.36s / var(--spd, 1)); }
+@keyframes tk-jerk {
   0% { transform: rotate(0); }
-  25% { transform: rotate(-4deg) translateY(2%); }
-  55% { transform: rotate(3deg); }
+  25% { transform: rotate(-3deg) translateY(3%); }
+  55% { transform: rotate(2deg); }
   100% { transform: rotate(0); }
 }
-.pack.is-out { animation: pack-out 0.3s ease-in both; }
-@keyframes pack-out {
-  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-  40% { transform: translate(-50%, -50%) scale(1.15, 0.85); opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-}
-.cell.is-hit { border-color: var(--ember); box-shadow: 0 0 0 2px var(--ember) inset; background: #fbe9dd; }
-.cell.is-hit .cell__inner { animation: wiggle 0.45s ease-in-out; }
-.cell.is-hit--line { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink) inset; background: #efe6cf; }
-.cell.is-hit--slam { border-color: var(--ember); box-shadow: 0 0 0 2px var(--ember) inset, 0 0 0 5px var(--ink) inset; background: #fbe9dd; }
-.cell.is-hit .cell__inner { animation: wiggle 0.3s ease-in-out both; }
-@keyframes wiggle {
-  0% { transform: scale(1.06) rotate(0); }
-  30% { transform: scale(1.1) rotate(-8deg); }
-  60% { transform: scale(1.1) rotate(8deg); }
-  100% { transform: scale(1.14, 0.86) translateY(6%); } /* 预备压扁，蓄力 */
+.tk.is-out .tk__body { animation: tk-out 0.26s ease-in both; animation-duration: calc(0.26s / var(--spd, 1)); }
+@keyframes tk-out {
+  0% { transform: scale(1); opacity: 1; }
+  40% { transform: scale(1.14, 0.86); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
 }
 
 /* ---------- 消除本体动作：默认 pop-out，各款式用 data-fx 覆盖 ---------- */
-.cell.is-removing .cell__inner { animation: pop-out 0.4s ease-in both; }
+.cell.is-removing .cell__inner { animation: pop-out 0.4s ease-in both; animation-duration: calc(0.4s / var(--spd, 1)); }
 @keyframes pop-out {
   0% { transform: scale(1.14, 0.86) translateY(6%); opacity: 1; }
   30% { transform: scale(1.1); opacity: 1; }
   100% { transform: scale(0.2) translateY(-20px); opacity: 0; }
 }
 /* 甜甜圈猫：鼓一圈再「啵」地缩掉 */
-.cell.is-removing[data-fx="donut"] .cell__inner { animation: out-donut 0.4s cubic-bezier(0.3, 0, 0.7, 1) both; }
+.cell.is-removing[data-fx="donut"] .cell__inner { animation: out-donut 0.4s cubic-bezier(0.3, 0, 0.7, 1) both; animation-duration: calc(0.4s / var(--spd, 1)); }
 @keyframes out-donut {
   0% { transform: scale(1.14, 0.86) translateY(6%); opacity: 1; }
   45% { transform: scale(1.3); opacity: 1; }
   100% { transform: scale(0); opacity: 0; }
 }
 /* 码农猫：横向抖动的故障感，最后像屏幕一样压成一条线 */
-.cell.is-removing[data-fx="code"] .cell__inner { animation: out-code 0.42s steps(1, end) both; }
+.cell.is-removing[data-fx="code"] .cell__inner { animation: out-code 0.42s steps(1, end) both; animation-duration: calc(0.42s / var(--spd, 1)); }
 @keyframes out-code {
   0% { transform: translateX(0); opacity: 1; }
   16% { transform: translateX(-7%) skewX(-8deg); opacity: 0.6; }
@@ -383,7 +359,7 @@ body { background: var(--paper); color: var(--ink); }
   100% { transform: scaleY(0.02) scaleX(0); opacity: 0; }
 }
 /* 音乐猫：按节拍弹两下再飞走 */
-.cell.is-removing[data-fx="music"] .cell__inner { animation: out-music 0.5s ease-in-out both; }
+.cell.is-removing[data-fx="music"] .cell__inner { animation: out-music 0.5s ease-in-out both; animation-duration: calc(0.5s / var(--spd, 1)); }
 @keyframes out-music {
   0% { transform: translateY(0) scale(1.1, 0.9); opacity: 1; }
   25% { transform: translateY(-14%) scale(0.95, 1.08) rotate(-6deg); }
@@ -392,7 +368,7 @@ body { background: var(--paper); color: var(--ink); }
   100% { transform: translateY(-110%) scale(0.5); opacity: 0; }
 }
 /* 咖啡猫：慵懒地左右晃着淡出 */
-.cell.is-removing[data-fx="coffee"] .cell__inner { animation: out-coffee 0.5s ease-in-out both; }
+.cell.is-removing[data-fx="coffee"] .cell__inner { animation: out-coffee 0.5s ease-in-out both; animation-duration: calc(0.5s / var(--spd, 1)); }
 @keyframes out-coffee {
   0% { transform: rotate(0) scale(1.1, 0.9); opacity: 1; }
   30% { transform: rotate(-10deg) translateY(-6%); opacity: 1; }
@@ -400,21 +376,21 @@ body { background: var(--paper); color: var(--ink); }
   100% { transform: rotate(-5deg) translateY(-40%) scale(0.8); opacity: 0; }
 }
 /* 摄影猫：定格半拍，再直接消失 */
-.cell.is-removing[data-fx="photo"] .cell__inner { animation: out-photo 0.4s ease-in both; }
+.cell.is-removing[data-fx="photo"] .cell__inner { animation: out-photo 0.4s ease-in both; animation-duration: calc(0.4s / var(--spd, 1)); }
 @keyframes out-photo {
   0% { transform: scale(1.14, 0.86) translateY(6%); opacity: 1; }
   10%, 60% { transform: scale(1.04); opacity: 1; }
   100% { transform: scale(0.92); opacity: 0; }
 }
 /* 厨师猫：像颠锅一样翻个面飞出去 */
-.cell.is-removing[data-fx="chef"] .cell__inner { animation: out-chef 0.45s ease-in both; }
+.cell.is-removing[data-fx="chef"] .cell__inner { animation: out-chef 0.45s ease-in both; animation-duration: calc(0.45s / var(--spd, 1)); }
 @keyframes out-chef {
   0% { transform: rotateY(0) translateY(0); opacity: 1; }
   50% { transform: rotateY(180deg) translateY(-25%); opacity: 1; }
   100% { transform: rotateY(360deg) translateY(-120%) scale(0.5); opacity: 0; }
 }
 /* 健身猫：先蹲下压扁再向上顶出去 */
-.cell.is-removing[data-fx="gym"] .cell__inner { animation: out-gym 0.42s cubic-bezier(0.4, 0, 0.6, 1) both; }
+.cell.is-removing[data-fx="gym"] .cell__inner { animation: out-gym 0.42s cubic-bezier(0.4, 0, 0.6, 1) both; animation-duration: calc(0.42s / var(--spd, 1)); }
 @keyframes out-gym {
   0% { transform: scale(1.14, 0.86) translateY(6%); opacity: 1; }
   30% { transform: scale(1.3, 0.65) translateY(16%); opacity: 1; }
@@ -422,13 +398,13 @@ body { background: var(--paper); color: var(--ink); }
   100% { transform: scale(0.7) translateY(-150%); opacity: 0; }
 }
 /* 画家猫：旋转着缩进画布中心 */
-.cell.is-removing[data-fx="painter"] .cell__inner { animation: out-painter 0.45s ease-in both; }
+.cell.is-removing[data-fx="painter"] .cell__inner { animation: out-painter 0.45s ease-in both; animation-duration: calc(0.45s / var(--spd, 1)); }
 @keyframes out-painter {
   0% { transform: rotate(0) scale(1.1); opacity: 1; }
   100% { transform: rotate(540deg) scale(0); opacity: 0; }
 }
 /* 派对猫：原地蹦一下再爆开 */
-.cell.is-removing[data-fx="party"] .cell__inner { animation: out-party 0.42s ease-out both; }
+.cell.is-removing[data-fx="party"] .cell__inner { animation: out-party 0.42s ease-out both; animation-duration: calc(0.42s / var(--spd, 1)); }
 @keyframes out-party {
   0% { transform: translateY(0) scale(1.1, 0.9); opacity: 1; }
   35% { transform: translateY(-20%) scale(1.1); opacity: 1; }
@@ -449,7 +425,7 @@ body { background: var(--paper); color: var(--ink); }
   font-size: 22px; font-weight: 900; color: var(--ember);
   text-shadow: 0 2px 0 var(--paper), 0 0 6px var(--paper);
   pointer-events: none;
-  animation: float-up 0.9s ease-out forwards;
+  animation: float-up 0.9s ease-out forwards; animation-duration: calc(0.9s / var(--spd, 1));
   white-space: nowrap;
   z-index: 2;
 }
@@ -471,12 +447,12 @@ body { background: var(--paper); color: var(--ink); }
   border-radius: 10px;
   z-index: 3;
 }
-.shake.is-show { display: flex; animation: fade-in 0.25s ease both; }
+.shake.is-show { display: flex; animation: fade-in 0.25s ease both; animation-duration: calc(0.25s / var(--spd, 1)); }
 @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
 .shake__hint { font-size: 15px; font-weight: 800; font-style: italic; letter-spacing: 1px; color: var(--ink); margin-bottom: 14px; }
 .btn--shake { padding: 12px 30px; display: flex; flex-direction: column; align-items: center; animation: bump 0.9s ease infinite alternate; }
 .btn--shake .btn__main { font-size: 22px; }
-.cell__inner.is-moving { transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.1); }
+.cell__inner.is-moving { transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.1); transition-duration: calc(0.45s / var(--spd, 1)); }
 
 /* 消除特效画布：比棋盘大一圈，粒子可以飞出棋盘；不吃点击 */
 .fx-canvas {
@@ -484,7 +460,7 @@ body { background: var(--paper); color: var(--ink); }
   pointer-events: none; z-index: 1;
 }
 /* 连线 / 大满贯时棋盘顿一下 */
-.board-wrap.is-thump { animation: board-thump 0.3s ease-out; }
+.board-wrap.is-thump { animation: board-thump 0.3s ease-out; animation-duration: calc(0.3s / var(--spd, 1)); }
 @keyframes board-thump {
   0% { transform: translateY(0); }
   30% { transform: translateY(6px) scale(1.012); }
@@ -640,7 +616,7 @@ body { background: var(--paper); color: var(--ink); }
   font-variant-numeric: tabular-nums;
 }
 .stash__item.is-has .stash__count { background: var(--ember); }
-.stash__item.is-bump { animation: bump 0.35s ease; }
+.stash__item.is-bump { animation: bump 0.35s ease; animation-duration: calc(0.35s / var(--spd, 1)); }
 
 /* ---------- 结算：得分拆解 + Top3 ---------- */
 /* 横幅变高后在矮屏上可滚动：覆盖层滚动，横幅用 auto margin 居中（比容器高时自动顶到顶部，不裁丝带） */
@@ -720,16 +696,158 @@ body { background: var(--paper); color: var(--ink); }
 .overlay .banner { z-index: 1; }
 @media (prefers-reduced-motion: reduce) { .fortune__stamp.is-in { animation: none; } }
 
-/* ---------- 页面转场：剪影扩张擦除 ---------- */
+/* ---------- 页面转场：拉锁 + 图标放大 ---------- */
+.wipe-bg { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--moss); display: none; }
+.wipe-bg.is-active { display: block; }
 .wipe {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   display: none; overflow: hidden;
   z-index: 50; pointer-events: none;
-  color: var(--ink);
+  color: var(--ember);
 }
 .wipe.is-active { display: block; pointer-events: auto; }
 .wipe__shape {
-  position: absolute; width: 100px; height: 100px;
+  position: absolute; left: 0; top: 0; width: 100px; height: 100px;
   transform: scale(0.01); transform-origin: 50% 50%;
   will-change: transform; overflow: visible;
 }
+
+/* ---------- 结算页主题（按 Top1 款式，data-theme = 特效预设名） ---------- */
+.banner { --acc-soft: rgba(216, 85, 44, 0.16); --acc-faint: rgba(216, 85, 44, 0.07); border-color: var(--acc); }
+.banner__ribbon { background: var(--acc); }
+.banner__tagline { font-size: 11px; font-style: italic; font-weight: 700; letter-spacing: 2px; color: var(--acc); margin: -6px 0 6px; opacity: 0.9; }
+.banner__cell { border-color: var(--acc-soft); background: var(--acc-faint); }
+.banner::before { background: repeating-linear-gradient(90deg, var(--acc) 0, var(--acc) 12px, transparent 12px, transparent 18px); opacity: 0.7; }
+
+/* 甜甜圈猫：粉色糖针撒落的波点 */
+.banner[data-theme="donut"] {
+  background-color: #fbeef1;
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(240, 101, 149, 0.28) 0 6px, transparent 7px),
+    radial-gradient(circle at 78% 12%, rgba(255, 212, 59, 0.5) 0 5px, transparent 6px),
+    radial-gradient(circle at 90% 62%, rgba(77, 171, 247, 0.4) 0 5px, transparent 6px),
+    radial-gradient(circle at 8% 74%, rgba(105, 219, 124, 0.45) 0 5px, transparent 6px),
+    radial-gradient(circle at 50% 96%, rgba(240, 101, 149, 0.25) 0 6px, transparent 7px);
+}
+/* 码农猫：终端横线 + 左侧行号带 */
+.banner[data-theme="code"] {
+  background-color: #eef5ea;
+  background-image: repeating-linear-gradient(180deg, transparent 0, transparent 21px, rgba(47, 158, 68, 0.14) 21px, rgba(47, 158, 68, 0.14) 22px);
+  font-variant-numeric: tabular-nums;
+}
+.banner[data-theme="code"] .banner__hero-num { font-family: "SF Mono", Menlo, Consolas, "Courier New", monospace; }
+/* 音乐猫：五线谱 */
+.banner[data-theme="music"] {
+  background-color: #eef1fb;
+  background-image: repeating-linear-gradient(180deg, transparent 0, transparent 14px, rgba(76, 110, 245, 0.18) 14px, rgba(76, 110, 245, 0.18) 15px, transparent 15px, transparent 74px);
+}
+/* 咖啡猫：杯底圆环 */
+.banner[data-theme="coffee"] {
+  background-color: #f3e6d3;
+  background-image:
+    radial-gradient(circle at 85% 20%, transparent 0 36px, rgba(141, 85, 36, 0.14) 36px 40px, transparent 41px),
+    radial-gradient(circle at 12% 80%, transparent 0 26px, rgba(141, 85, 36, 0.14) 26px 29px, transparent 30px);
+}
+/* 摄影猫：左右胶片齿孔 */
+.banner[data-theme="photo"] {
+  background-color: #f1f1ee;
+  background-image:
+    repeating-linear-gradient(180deg, rgba(73, 80, 87, 0.75) 0, rgba(73, 80, 87, 0.75) 10px, transparent 10px, transparent 18px),
+    repeating-linear-gradient(180deg, rgba(73, 80, 87, 0.75) 0, rgba(73, 80, 87, 0.75) 10px, transparent 10px, transparent 18px);
+  background-size: 7px 100%, 7px 100%;
+  background-position: 6px 8px, calc(100% - 6px) 8px;
+  background-repeat: repeat-y, repeat-y;
+}
+/* 厨师猫：橙色餐布格 */
+.banner[data-theme="chef"] {
+  background-color: #fdf1e2;
+  background-image:
+    linear-gradient(45deg, rgba(240, 140, 0, 0.1) 25%, transparent 25%, transparent 75%, rgba(240, 140, 0, 0.1) 75%),
+    linear-gradient(45deg, rgba(240, 140, 0, 0.1) 25%, transparent 25%, transparent 75%, rgba(240, 140, 0, 0.1) 75%);
+  background-size: 28px 28px;
+  background-position: 0 0, 14px 14px;
+}
+/* 健身猫：斜条纹 */
+.banner[data-theme="gym"] {
+  background-color: #fcefe6;
+  background-image: repeating-linear-gradient(-45deg, rgba(232, 89, 12, 0.12) 0, rgba(232, 89, 12, 0.12) 8px, transparent 8px, transparent 22px);
+}
+/* 画家猫：调色盘颜料溅点 */
+.banner[data-theme="painter"] {
+  background-color: #f7edf9;
+  background-image:
+    radial-gradient(ellipse at 6% 10%, rgba(255, 107, 107, 0.35) 0 18px, transparent 19px),
+    radial-gradient(ellipse at 94% 8%, rgba(77, 171, 247, 0.35) 0 14px, transparent 15px),
+    radial-gradient(ellipse at 92% 90%, rgba(255, 212, 59, 0.45) 0 16px, transparent 17px),
+    radial-gradient(ellipse at 10% 92%, rgba(105, 219, 124, 0.4) 0 12px, transparent 13px),
+    radial-gradient(ellipse at 50% 4%, rgba(218, 119, 242, 0.3) 0 9px, transparent 10px);
+}
+/* 派对猫：彩纸 */
+.banner[data-theme="party"] {
+  background-color: #fdeeee;
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(240, 62, 62, 0.45) 0 3px, transparent 4px),
+    radial-gradient(circle at 30% 70%, rgba(255, 212, 59, 0.6) 0 3px, transparent 4px),
+    radial-gradient(circle at 70% 30%, rgba(77, 171, 247, 0.5) 0 3px, transparent 4px),
+    radial-gradient(circle at 88% 78%, rgba(105, 219, 124, 0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 55% 55%, rgba(218, 119, 242, 0.45) 0 3px, transparent 4px);
+  background-size: 90px 90px;
+}
+.banner[data-theme="party"] .banner__ribbon { animation: bump 0.8s ease infinite alternate; }
+.banner[data-theme="gym"] .banner__hero-num { animation: bump 0.9s ease infinite alternate; }
+.banner[data-theme="music"] .fortune__stamp { animation-duration: 0.7s; }
+@media (prefers-reduced-motion: reduce) {
+  .banner[data-theme="party"] .banner__ribbon, .banner[data-theme="gym"] .banner__hero-num { animation: none; }
+}
+
+/* ---------- 自动发牌模式：开局发牌遮罩 ---------- */
+.deal-mask {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: none;
+  flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(46, 45, 40, 0.58);
+  border-radius: 10px;
+  z-index: 3;
+}
+.deal-mask.is-show { display: flex; animation: fade-in 0.25s ease both; }
+.deal-mask__hint { font-size: 13px; font-weight: 700; font-style: italic; letter-spacing: 1px; color: var(--paper); margin-bottom: 16px; }
+.btn--deal-start {
+  padding: 14px 44px; display: flex; flex-direction: column; align-items: center;
+  box-shadow: 0 5px 0 var(--ember-dark), 0 0 0 3px var(--paper);
+  animation: deal-pulse 1s ease-in-out infinite alternate;
+}
+.btn--deal-start:active { box-shadow: 0 1px 0 var(--ember-dark), 0 0 0 3px var(--paper); animation: none; }
+.btn--deal-start .btn__main { font-size: 28px; }
+@keyframes deal-pulse { 0% { transform: scale(1); } 100% { transform: scale(1.06); } }
+@media (prefers-reduced-motion: reduce) { .btn--deal-start { animation: none; } }
+/* 自动模式下底栏不再放发牌按钮，只留格纹 */
+#screen-game.is-auto .btn--deal { display: none; }
+#screen-game.is-auto .dock { padding-top: 0; }
+
+/* ---------- 全局倍速（自动发牌模式底栏） ---------- */
+:root { --spd: 1; }
+/* 暂停：冻结游戏页内所有 CSS 动画（过渡无法冻结，靠 JS 等待停住即可） */
+html.is-paused #screen-game * { animation-play-state: paused !important; }
+.speed {
+  display: none; align-items: stretch;
+  background: var(--paper); border: 2px solid var(--ink); border-radius: 999px; padding: 3px;
+}
+#screen-game.is-auto .speed { display: flex; }
+#screen-game.is-auto .dock { padding-top: 8px; }
+.speed__btn {
+  -webkit-appearance: none; appearance: none; border: 0; background: transparent; font: inherit; cursor: pointer;
+  min-width: 56px; height: 34px; padding: 0 14px; border-radius: 999px;
+  font-size: 15px; font-weight: 900; letter-spacing: 1px; color: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.speed__btn + .speed__btn { margin-left: 2px; }
+.speed__btn:active { opacity: 0.7; }
+.speed__btn.is-active { background: var(--ink); color: var(--paper); }
+.speed__btn--pause.is-active { background: var(--ember); }
+.speed__bars { display: inline-block; width: 12px; height: 14px; position: relative; }
+.speed__bars::before, .speed__bars::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: 4px; border-radius: 1px; background: currentColor;
+}
+.speed__bars::before { left: 0; }
+.speed__bars::after { right: 0; }

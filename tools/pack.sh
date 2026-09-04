@@ -10,6 +10,9 @@ AUDIT="$ROOT/.claude/skills/minitool-zip-builder/scripts/audit_artifact.mjs"
 echo "== 1. 单元测试"
 node "$ROOT/tools/engine.test.js"
 
+echo "== 1b. 重新生成占卜分布表"
+node "$ROOT/tools/build-fortune.js" 20000
+
 echo "== 2. 违规能力扫描（命中即失败）"
 if grep -rnE "fetch\(|XMLHttpRequest|new WebSocket|new EventSource|RTCPeerConnection|navigator\.geolocation|navigator\.clipboard|execCommand|navigator\.(bluetooth|usb|hid|serial|getBattery|connection|credentials|locks|serviceWorker)|enumerateDevices|getDisplayMedia|new (Shared)?Worker\(|Accelerometer|Gyroscope|Magnetometer|DeviceMotionEvent|DeviceOrientationEvent|requestFullscreen|\beval\(|new Function\(|WebAssembly|window\.open\(|window\.prompt\(|\bprompt\(|type=\"module\"|<iframe|<object|<base |https?://" "$APP" --include='*.html' --include='*.js' --include='*.css' | grep -vE "xmlns|w3\.org"; then
   echo "发现违规能力引用，见上"; exit 1

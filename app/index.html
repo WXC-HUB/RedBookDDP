@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>乌龟对对碰</title>
+  <title>猫猫对对碰</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
@@ -51,24 +51,25 @@
     <polygon points="50,67 62,60 60,76 50,82 40,76 38,60" fill="rgba(255,255,255,0.18)" stroke="rgba(0,0,0,0.18)" stroke-width="1.5"/>
     <ellipse cx="40" cy="36" rx="8" ry="4" transform="rotate(-30 40 36)" fill="rgba(255,255,255,0.35)"/>
   </symbol>
-  <!-- 转场剪影：以 (0,0) 为中心，内切圆半径见 wipe.js SHAPES -->
+  <!-- 转场剪影：以 (0,0) 为中心的贴纸风图标（填充 currentColor + 墨色描边），内切圆半径见 wipe.js SHAPES -->
   <symbol id="w-cat" viewBox="-50 -50 100 100">
-    <polygon points="-36,-10 -30,-47 -4,-30" fill="currentColor"/>
-    <polygon points="36,-10 30,-47 4,-30" fill="currentColor"/>
-    <circle cx="0" cy="6" r="38" fill="currentColor"/>
+    <path d="M-32.9,-13 L-30,-47 L-9.8,-30.7 A38,38 0 0 1 9.8,-30.7 L30,-47 L32.9,-13 A38,38 0 1 1 -32.9,-13 Z"
+          fill="currentColor" stroke="#2e2d28" stroke-width="3" stroke-linejoin="round"/>
     <ellipse class="w-eye" cx="-14" cy="2" rx="4.5" ry="6" fill="#f4e7cc"/>
     <ellipse class="w-eye" cx="14" cy="2" rx="4.5" ry="6" fill="#f4e7cc"/>
     <polygon points="-3.5,13 3.5,13 0,17" fill="#f4e7cc"/>
     <path d="M-7 18 q3.5 4.5 7 0 q3.5 4.5 7 0" stroke="#f4e7cc" stroke-width="2" fill="none" stroke-linecap="round"/>
   </symbol>
   <symbol id="w-turtle" viewBox="-50 -50 100 100">
-    <ellipse cx="-30" cy="-18" rx="11" ry="7" transform="rotate(-38 -30 -18)" fill="currentColor"/>
-    <ellipse cx="30" cy="-18" rx="11" ry="7" transform="rotate(38 30 -18)" fill="currentColor"/>
-    <ellipse cx="-30" cy="26" rx="11" ry="7" transform="rotate(38 -30 26)" fill="currentColor"/>
-    <ellipse cx="30" cy="26" rx="11" ry="7" transform="rotate(-38 30 26)" fill="currentColor"/>
-    <polygon points="0,38 -6,49 6,49" fill="currentColor"/>
-    <circle cx="0" cy="-36" r="13" fill="currentColor"/>
-    <circle cx="0" cy="4" r="36" fill="currentColor"/>
+    <g fill="currentColor" stroke="#2e2d28" stroke-width="3" stroke-linejoin="round">
+      <ellipse cx="-30" cy="-18" rx="11" ry="7" transform="rotate(-38 -30 -18)"/>
+      <ellipse cx="30" cy="-18" rx="11" ry="7" transform="rotate(38 30 -18)"/>
+      <ellipse cx="-30" cy="26" rx="11" ry="7" transform="rotate(38 -30 26)"/>
+      <ellipse cx="30" cy="26" rx="11" ry="7" transform="rotate(-38 30 26)"/>
+      <polygon points="0,38 -6,49 6,49"/>
+      <circle cx="0" cy="-36" r="13"/>
+      <circle cx="0" cy="4" r="36"/>
+    </g>
     <ellipse class="w-eye" cx="-5" cy="-38" rx="2.2" ry="2.6" fill="#f4e7cc"/>
     <ellipse class="w-eye" cx="5" cy="-38" rx="2.2" ry="2.6" fill="#f4e7cc"/>
     <path d="M-4 -32 q4 3 8 0" stroke="#f4e7cc" stroke-width="1.4" fill="none" stroke-linecap="round"/>
@@ -76,12 +77,14 @@
 </svg>
 
 <div id="app">
+  <!-- 转场时旧界面裂开后露出的墨黑底（wipe.js 控制） -->
+  <div class="wipe-bg" id="wipe-bg"></div>
 
   <!-- 开始界面 -->
   <section id="screen-home" class="screen is-active">
     <div class="home">
       <header class="home__head">
-        <h1 class="home__title">乌龟对对碰</h1>
+        <h1 class="home__title">猫猫对对碰</h1>
         <p class="home__tag"><span class="home__tag-dot"></span><span class="home__tag-text">PAIR &amp; MATCH</span><span class="home__tag-dot"></span></p>
       </header>
 
@@ -141,12 +144,14 @@
       </div>
       <div class="board-wrap">
         <div class="board" id="board"></div>
-        <div class="pack" id="pack" aria-hidden="true">
-          <div class="pack__top"></div>
-          <div class="pack__body">
-            <span class="pack__band">CAT PACK</span>
-            <span class="pack__count" id="pack-count">×9</span>
-          </div>
+        <div class="packs" id="packs" aria-hidden="true"></div>
+        <!-- 自动发牌模式：开局唯一的交互，压暗棋盘只留这个按钮；点过一次后整局不再出现 -->
+        <div class="deal-mask" id="deal-mask">
+          <p class="deal-mask__hint">点一次发牌，之后自动进行</p>
+          <button class="btn btn--primary btn--deal-start" id="btn-deal-start" type="button">
+            <span class="btn__main">发牌</span>
+            <span class="btn__sub" id="deal-start-cost">用 9 个卡包填满</span>
+          </button>
         </div>
         <div class="shake" id="shake">
           <p class="shake__hint">什么都没碰上</p>
@@ -167,6 +172,13 @@
         <span class="btn__main">发牌</span>
         <span class="btn__sub" id="deal-cost">用 9 个卡包填满</span>
       </button>
+      <!-- 自动发牌模式：底栏放倍速控件（暂停 / 1× / 2× / 4×），影响全局动画速度 -->
+      <div class="speed" id="speed" role="group" aria-label="倍速">
+        <button class="speed__btn speed__btn--pause" data-speed="0" type="button" aria-label="暂停"><span class="speed__bars"></span></button>
+        <button class="speed__btn is-active" data-speed="1" type="button">1×</button>
+        <button class="speed__btn" data-speed="2" type="button">2×</button>
+        <button class="speed__btn" data-speed="4" type="button">4×</button>
+      </div>
       <div class="checker checker--sm"></div>
     </footer>
   </section>
@@ -176,6 +188,7 @@
 <div class="overlay" id="result">
   <div class="banner">
     <div class="banner__ribbon" id="result-title">RUN 结束</div>
+    <p class="banner__tagline" id="result-tagline">PAIR &amp; MATCH</p>
     <div class="fortune" id="result-fortune">
       <span class="fortune__stamp" id="fortune-stamp">大吉</span>
       <div class="fortune__body">
@@ -266,6 +279,7 @@
 <script src="./js/fx.js"></script>
 <script src="./js/share.js"></script>
 <script src="./js/wipe.js"></script>
+<script src="./js/fortune-data.js"></script>
 <script src="./js/fortune.js"></script>
 <script src="./js/app.js"></script>
 </body>

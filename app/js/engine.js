@@ -1,4 +1,4 @@
-/* 乌龟对对碰 · 规则引擎（纯逻辑，无 DOM）
+/* 猫猫对对碰 · 规则引擎（纯逻辑，无 DOM）
  * 经典脚本：挂到 window.TurtleEngine；Node 下通过 module.exports 导出供模拟脚本使用。
  * 目标基线 ES2017 / Chrome 61。
  */

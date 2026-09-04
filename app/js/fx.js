@@ -1,4 +1,4 @@
-/* 乌龟对对碰 · 消除特效层（Canvas 2D 粒子）
+/* 猫猫对对碰 · 消除特效层（Canvas 2D 粒子）
  * 一张覆盖棋盘的 canvas，所有款式的消除特效都画在这一层；DOM 不增加节点。
  * 每个款式一个预设（PRESETS），皮肤表里用 fx 字段指向预设名。
  * 挂到 window.TurtleFX。ES2017 / Chrome 61：不用 OffscreenCanvas / Worker。 */
@@ -65,11 +65,12 @@
 
   function step(now) {
     // 物理步长限制在 50ms 内防止穿越；寿命按真实时间走（上限 250ms），页面卡顿时粒子也能及时消散
-    var wall = lastT ? (now - lastT) / 1000 : 0.016;
+    var real = lastT ? (now - lastT) / 1000 : 0.016;
+    var wall = real * rate; // 全局倍速：0 = 暂停（粒子悬停不动）
     var dt = Math.min(0.05, wall);
     var ageDt = Math.min(0.25, wall);
     lastT = now;
-    if (wall > 0.024) { if (++slowFrames >= 10) quality = 0.5; } else slowFrames = 0;
+    if (real > 0.024) { if (++slowFrames >= 10) quality = 0.5; } else slowFrames = 0;
     ctx.clearRect(0, 0, W, H);
     var k;
     for (var i = parts.length - 1; i >= 0; i--) {
@@ -308,5 +309,20 @@
     if (canvas.parentNode !== hostEl) { hostEl.appendChild(canvas); resize(); }
   }
 
-  root.TurtleFX = { init: init, attach: attach, burst: burst, celebrate: celebrate, PRESETS: PRESETS };
+  /* 在画布坐标 (cx, cy) 处播放预设，r 为等效半格边长；供结算页环境特效随机撒点 */
+  function burstAt(fxId, cx, cy, r, k, color) {
+    if (!canvas) return;
+    ensureSize();
+    var c = { cx: cx, cy: cy, r: r || 40, rw: r || 40, k: k || 1, v: 1, color: color || '#e8590c' };
+    (PRESETS[fxId] || PRESETS.pop)(c);
+  }
+
+  /* 画布相对坐标系里的宿主尺寸 */
+  function size() { if (!canvas) return { w: 0, h: 0 }; ensureSize(); return { w: W, h: H }; }
+
+  /* 全局倍速倍率：由 app.js 的 Speed 模块设置 */
+  var rate = 1;
+  function setRate(r) { rate = r; }
+
+  root.TurtleFX = { init: init, attach: attach, burst: burst, burstAt: burstAt, size: size, celebrate: celebrate, setRate: setRate, PRESETS: PRESETS };
 })(window);
