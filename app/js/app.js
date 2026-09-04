@@ -482,7 +482,7 @@
     for (k = 0; k < out.filled.length; k++) dealt.push(out.board[out.filled[k]]);
     await playPackOpen(dealt);
     // 逐张快速撕开：每 TEAR_STEP 撕一张，撕开 TEAR_TO_FLY 后这张票的猫飞出、票身爆开
-    var TEAR_STEP = 110, TEAR_TO_FLY = 220;
+    var TEAR_STEP = 55, TEAR_TO_FLY = 220;
     for (k = 0; k < out.filled.length; k++) {
       i = out.filled[k];
       after(k * TEAR_STEP, tearTicket.bind(null, k));
@@ -899,7 +899,7 @@
       spent: state.spent, fortune: fortune.name, fortuneTier: fortune.tier, fortuneLine: fortuneLine, themeIdx: themeIdx
     };
 
-    $('result-reason').textContent = reasonText;
+    $('result-reason').textContent = '超过 ' + fortune.pctText + ' 的' + Skin.get().noun; // 界面只留一句，完整文案给战绩图
     // 结算界面围绕 Top1 款式定主题：强调色取其特效主色，背景 / 标签 / 标语 / 环境特效跟着款式走
     var themeFx = Skin.fx(themeIdx), theme = Skin.theme(themeIdx);
     var acc = themeFx.color;

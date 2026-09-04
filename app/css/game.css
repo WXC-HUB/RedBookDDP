@@ -839,7 +839,6 @@ html.is-paused #screen-game * { animation-play-state: paused !important; }
   min-width: 56px; height: 34px; padding: 0 14px; border-radius: 999px;
   font-size: 15px; font-weight: 900; letter-spacing: 1px; color: var(--ink);
   display: flex; align-items: center; justify-content: center;
-  transition: background-color 0.12s ease, color 0.12s ease;
 }
 .speed__btn + .speed__btn { margin-left: 2px; }
 .speed__btn:active { opacity: 0.7; }
@@ -851,3 +850,12 @@ html.is-paused #screen-game * { animation-play-state: paused !important; }
 }
 .speed__bars::before { left: 0; }
 .speed__bars::after { right: 0; }
+
+/* ---------- 结算页精简：隐藏次要信息 ---------- */
+.banner__tagline, .banner__lucky, .banner__breakdown, .banner__grid { display: none; }
+.banner { padding-top: 34px; }
+.fortune { margin: 6px 0 12px; }
+.fortune__pct { font-size: 12px; }
+.fortune__line { font-size: 16px; }
+.banner__hero { margin-bottom: 10px; }
+.banner__top3 { margin-bottom: 14px; }
