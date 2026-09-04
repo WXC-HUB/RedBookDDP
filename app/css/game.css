@@ -907,3 +907,42 @@ html.is-paused #screen-game * { animation-play-state: paused !important; }
 .tally__item b { font-size: 14px; font-weight: 900; color: var(--ink); margin-right: 3px; font-variant-numeric: tabular-nums; }
 /* 7 新纪录 */
 .banner__new { margin-bottom: 12px; }
+
+/* ---------- 运势标签：票签样式（覆盖上方大字版） ---------- */
+.banner .fortune__stamp {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  margin: 4px auto 8px; padding: 7px 16px 7px 24px;
+  width: auto; height: auto;
+  background: var(--acc); color: var(--paper);
+  border: 0; border-radius: 10px; border-bottom: 0;
+  box-shadow: 0 0 0 3px var(--paper) inset, 0 0 0 5px var(--acc) inset, 0 4px 0 rgba(46, 45, 40, 0.28);
+  font-size: 28px; font-weight: 900; letter-spacing: 8px; line-height: 1.2;
+  text-shadow: 0 2px 0 rgba(46, 45, 40, 0.18);
+  transform: rotate(-4deg); opacity: 1;
+}
+/* 两侧打孔 */
+.banner .fortune__stamp::before, .banner .fortune__stamp::after {
+  content: ''; position: absolute; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%;
+  background: var(--paper); box-shadow: 0 0 0 3px var(--acc);
+}
+.banner .fortune__stamp::before { left: -6px; }
+.banner .fortune__stamp::after { right: -6px; }
+/* 末吉：留白版，虚线内框 */
+.banner .fortune__stamp--0 {
+  background: var(--paper); color: var(--acc); text-shadow: none;
+  box-shadow: 0 0 0 3px var(--acc) inset, 0 4px 0 rgba(46, 45, 40, 0.18);
+  border-bottom: 0; opacity: 0.9;
+}
+.banner .fortune__stamp--0::before, .banner .fortune__stamp--0::after { box-shadow: 0 0 0 3px var(--acc); }
+/* 小吉 / 中吉：默认实心 */
+/* 大吉：外圈再加一道描边 */
+.banner .fortune__stamp--3 {
+  box-shadow: 0 0 0 3px var(--paper) inset, 0 0 0 5px var(--acc) inset, 0 0 0 3px var(--paper), 0 0 0 6px var(--acc), 0 6px 0 3px rgba(46, 45, 40, 0.22);
+}
+.banner .fortune__stamp.is-in { animation: tag-in 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+@keyframes tag-in {
+  0% { transform: rotate(-24deg) scale(2); opacity: 0; }
+  60% { transform: rotate(-2deg) scale(0.94); opacity: 1; }
+  100% { transform: rotate(-4deg) scale(1); opacity: 1; }
+}
+.banner__hero { margin-top: 10px; }
