@@ -830,11 +830,11 @@
 
   function stopAmbient() { if (ambientTimer) { clearInterval(ambientTimer); ambientTimer = 0; } }
 
-  /* 结算特效：粒子画布挂到结算弹层；用 Top1 款式的预设在印章与分数上炸开，随后按该款式节奏持续撒环境特效 */
+  /* 结算特效：全部集中在运势标签上。粒子画布挂到结算弹层；
+   * 先用 Top1 款式的预设在标签上炸开一次（档位越高越强，中吉以上追加彩纸），随后按该款式节奏在标签上持续小爆发。 */
   function playResultFx(tier, themeIdx) {
     var fxInfo = Skin.fx(themeIdx);
-    var overlay = $('result'), hero = $('result-score'), stamp = $('fortune-stamp');
-    var bannerEl = document.querySelector('#result .banner');
+    var overlay = $('result'), stamp = $('fortune-stamp');
     FX.attach(overlay);
     stopAmbient();
     stamp.classList.remove('is-in');
@@ -842,32 +842,20 @@
     stamp.classList.add('is-in');
     setTimeout(function () {
       if (!overlay.classList.contains('is-open')) return;
-      FX.burst(fxInfo.id, stamp, 1 + tier * 0.3, fxInfo.color);
-    }, 420);
-    setTimeout(function () {
-      if (!overlay.classList.contains('is-open')) return;
-      FX.burst(fxInfo.id, hero, 1.4 + tier * 0.4, fxInfo.color);
-      if (tier >= 2) FX.celebrate(hero, tier === 3 ? 2.4 : 1.4);
-    }, 700);
+      FX.burst(fxInfo.id, stamp, 1.2 + tier * 0.45, fxInfo.color);
+      if (tier >= 2) FX.celebrate(stamp, tier === 3 ? 2 : 1.2);
+    }, 380);
 
     var amb = AMBIENT[fxInfo.id] || AMBIENT.pop;
-    var every = Math.round(amb.every * (tier === 3 ? 0.7 : tier === 0 ? 1.4 : 1));
+    var every = Math.round(amb.every * 1.6 * (tier === 3 ? 0.7 : tier === 0 ? 1.5 : 1));
     ambientTimer = setInterval(function () {
-      if (!overlay.classList.contains('is-open') || !document.querySelector('.fx-canvas') || document.querySelector('.fx-canvas').parentNode !== overlay) { stopAmbient(); return; }
-      var sz = FX.size(), o = overlay.getBoundingClientRect(), b = bannerEl.getBoundingClientRect();
-      var left = b.left - o.left, right = b.right - o.left, top = b.top - o.top, bottom = b.bottom - o.top;
-      var x, y, r = 36;
-      if (amb.zone === 'top') { x = left + Math.random() * (right - left); y = top + Math.random() * 40 - 30; }
-      else if (amb.zone === 'bottom') { x = left + Math.random() * (right - left); y = bottom - 20 - Math.random() * 30; }
-      else if (amb.zone === 'all') { x = Math.random() * sz.w; y = Math.random() * sz.h; }
-      else { // edges：卡片四周一圈
-        var side = Math.floor(Math.random() * 4);
-        if (side === 0) { x = left + Math.random() * (right - left); y = top - 10; }
-        else if (side === 1) { x = left + Math.random() * (right - left); y = bottom + 10; }
-        else if (side === 2) { x = left - 12; y = top + Math.random() * (bottom - top); }
-        else { x = right + 12; y = top + Math.random() * (bottom - top); }
-      }
-      FX.burstAt(fxInfo.id, x, y, r, amb.k, fxInfo.color);
+      var cv = document.querySelector('.fx-canvas');
+      if (!overlay.classList.contains('is-open') || !cv || cv.parentNode !== overlay) { stopAmbient(); return; }
+      // 只在标签范围内随机取点，不往外扩
+      var o = overlay.getBoundingClientRect(), r = stamp.getBoundingClientRect();
+      var x = r.left - o.left + Math.random() * r.width;
+      var y = r.top - o.top + Math.random() * r.height;
+      FX.burstAt(fxInfo.id, x, y, 22, amb.k * 0.8, fxInfo.color);
     }, every);
   }
 
@@ -899,7 +887,7 @@
       spent: state.spent, fortune: fortune.name, fortuneTier: fortune.tier, fortuneLine: fortuneLine, themeIdx: themeIdx
     };
 
-    $('result-reason').textContent = '超过 ' + fortune.pctText + ' 的' + Skin.get().noun; // 界面只留一句，完整文案给战绩图
+    $('result-reason').textContent = '超越 ' + fortune.pctText + ' 的玩家'; // 界面只留一句，完整文案给战绩图
     // 结算界面围绕 Top1 款式定主题：强调色取其特效主色，背景 / 标签 / 标语 / 环境特效跟着款式走
     var themeFx = Skin.fx(themeIdx), theme = Skin.theme(themeIdx);
     var acc = themeFx.color;

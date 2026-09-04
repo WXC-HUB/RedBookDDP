@@ -187,36 +187,41 @@
 <!-- 结果横幅 -->
 <div class="overlay" id="result">
   <div class="banner">
+    <!-- 1 标题 -->
     <div class="banner__ribbon" id="result-title">RUN 结束</div>
-    <p class="banner__tagline" id="result-tagline">PAIR &amp; MATCH</p>
-    <div class="fortune" id="result-fortune">
-      <span class="fortune__stamp" id="fortune-stamp">大吉</span>
-      <div class="fortune__body">
-        <p class="fortune__pct" id="result-reason"></p>
-        <p class="fortune__line" id="fortune-line"></p>
-      </div>
-    </div>
-    <p class="banner__lucky" id="result-lucky"></p>
+    <!-- 2 运势 -->
+    <div class="fortune__stamp" id="fortune-stamp">大吉</div>
+    <!-- 3 得分 + 超越百分比 -->
     <div class="banner__hero">
       <span class="banner__hero-num" id="result-score">0</span>
       <span class="banner__hero-label">只</span>
     </div>
-    <p class="banner__breakdown" id="result-breakdown"></p>
-    <div class="banner__top3" id="result-top3"></div>
-    <div class="banner__grid">
-      <div class="banner__cell"><span class="banner__num" id="result-rounds">0</span><span class="banner__label">轮次</span></div>
-      <div class="banner__cell"><span class="banner__num" id="result-earned">0</span><span class="banner__label">卡包赚取</span></div>
-      <div class="banner__cell"><span class="banner__num" id="result-lines">0</span><span class="banner__label">连线</span></div>
-      <div class="banner__cell"><span class="banner__num" id="result-pairs">0</span><span class="banner__label">对子</span></div>
-      <div class="banner__cell"><span class="banner__num" id="result-clears">0</span><span class="banner__label">清空</span></div>
-      <div class="banner__cell"><span class="banner__num" id="result-slams">0</span><span class="banner__label">大满贯</span></div>
+    <p class="banner__pct" id="result-reason"></p>
+    <!-- 4 签文 -->
+    <p class="banner__oracle" id="fortune-line"></p>
+    <!-- 5 领奖台 -->
+    <div class="banner__top3 podium" id="result-top3"></div>
+    <!-- 6 消除计数 -->
+    <div class="tally">
+      <span class="tally__item"><b id="result-pairs">0</b>对对碰</span>
+      <span class="tally__item"><b id="result-lines">0</b>三连碰</span>
+      <span class="tally__item"><b id="result-clears">0</b>全清空</span>
+      <span class="tally__item"><b id="result-slams">0</b>大满贯</span>
     </div>
+    <!-- 7 新纪录 -->
     <div class="banner__new" id="result-new-record">新纪录！</div>
+    <!-- 8 按钮 -->
     <div class="banner__actions">
       <button class="btn btn--primary" id="btn-again" type="button">再来一局</button>
       <button class="btn btn--secondary" id="btn-share" type="button">保存战绩图</button>
       <button class="btn btn--ghost" id="btn-home" type="button">返回主页</button>
     </div>
+    <!-- 仅供脚本写入、不展示的旧字段 -->
+    <span hidden id="result-tagline"></span>
+    <span hidden id="result-lucky"></span>
+    <span hidden id="result-breakdown"></span>
+    <span hidden id="result-rounds"></span>
+    <span hidden id="result-earned"></span>
   </div>
 </div>
 
