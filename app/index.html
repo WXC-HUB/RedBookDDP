@@ -51,6 +51,28 @@
     <polygon points="50,67 62,60 60,76 50,82 40,76 38,60" fill="rgba(255,255,255,0.18)" stroke="rgba(0,0,0,0.18)" stroke-width="1.5"/>
     <ellipse cx="40" cy="36" rx="8" ry="4" transform="rotate(-30 40 36)" fill="rgba(255,255,255,0.35)"/>
   </symbol>
+  <!-- 转场剪影：以 (0,0) 为中心，内切圆半径见 wipe.js SHAPES -->
+  <symbol id="w-cat" viewBox="-50 -50 100 100">
+    <polygon points="-36,-10 -30,-47 -4,-30" fill="currentColor"/>
+    <polygon points="36,-10 30,-47 4,-30" fill="currentColor"/>
+    <circle cx="0" cy="6" r="38" fill="currentColor"/>
+    <ellipse class="w-eye" cx="-14" cy="2" rx="4.5" ry="6" fill="#f4e7cc"/>
+    <ellipse class="w-eye" cx="14" cy="2" rx="4.5" ry="6" fill="#f4e7cc"/>
+    <polygon points="-3.5,13 3.5,13 0,17" fill="#f4e7cc"/>
+    <path d="M-7 18 q3.5 4.5 7 0 q3.5 4.5 7 0" stroke="#f4e7cc" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="w-turtle" viewBox="-50 -50 100 100">
+    <ellipse cx="-30" cy="-18" rx="11" ry="7" transform="rotate(-38 -30 -18)" fill="currentColor"/>
+    <ellipse cx="30" cy="-18" rx="11" ry="7" transform="rotate(38 30 -18)" fill="currentColor"/>
+    <ellipse cx="-30" cy="26" rx="11" ry="7" transform="rotate(38 -30 26)" fill="currentColor"/>
+    <ellipse cx="30" cy="26" rx="11" ry="7" transform="rotate(-38 30 26)" fill="currentColor"/>
+    <polygon points="0,38 -6,49 6,49" fill="currentColor"/>
+    <circle cx="0" cy="-36" r="13" fill="currentColor"/>
+    <circle cx="0" cy="4" r="36" fill="currentColor"/>
+    <ellipse class="w-eye" cx="-5" cy="-38" rx="2.2" ry="2.6" fill="#f4e7cc"/>
+    <ellipse class="w-eye" cx="5" cy="-38" rx="2.2" ry="2.6" fill="#f4e7cc"/>
+    <path d="M-4 -32 q4 3 8 0" stroke="#f4e7cc" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+  </symbol>
 </svg>
 
 <div id="app">
@@ -119,6 +141,13 @@
       </div>
       <div class="board-wrap">
         <div class="board" id="board"></div>
+        <div class="pack" id="pack" aria-hidden="true">
+          <div class="pack__top"></div>
+          <div class="pack__body">
+            <span class="pack__band">CAT PACK</span>
+            <span class="pack__count" id="pack-count">×9</span>
+          </div>
+        </div>
         <div class="shake" id="shake">
           <p class="shake__hint">什么都没碰上</p>
           <button class="btn btn--primary btn--shake" id="btn-shake" type="button">
@@ -147,7 +176,13 @@
 <div class="overlay" id="result">
   <div class="banner">
     <div class="banner__ribbon" id="result-title">RUN 结束</div>
-    <p class="banner__reason" id="result-reason"></p>
+    <div class="fortune" id="result-fortune">
+      <span class="fortune__stamp" id="fortune-stamp">大吉</span>
+      <div class="fortune__body">
+        <p class="fortune__pct" id="result-reason"></p>
+        <p class="fortune__line" id="fortune-line"></p>
+      </div>
+    </div>
     <p class="banner__lucky" id="result-lucky"></p>
     <div class="banner__hero">
       <span class="banner__hero-num" id="result-score">0</span>
@@ -221,10 +256,17 @@
   </div>
 </div>
 
+<!-- 页面转场图层（wipe.js 控制） -->
+<div class="wipe" id="wipe" aria-hidden="true">
+  <svg class="wipe__shape" viewBox="0 0 100 100"><use xlink:href="#w-cat" href="#w-cat"/></svg>
+</div>
+
 <script src="./js/engine.js"></script>
 <script src="./js/skins.js"></script>
 <script src="./js/fx.js"></script>
 <script src="./js/share.js"></script>
+<script src="./js/wipe.js"></script>
+<script src="./js/fortune.js"></script>
 <script src="./js/app.js"></script>
 </body>
 </html>

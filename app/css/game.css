@@ -284,10 +284,66 @@ body { background: var(--paper); color: var(--ink); }
   /* 猫的投影：右下 45° 左右的方向、硬边无模糊、墨色，和海报硬投影一致 */
   filter: drop-shadow(4px 5px 0 rgba(46, 45, 40, 0.32));
 }
-.cell.is-dealing .cell__inner { animation: pop-in 0.34s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
-@keyframes pop-in {
-  0% { transform: scale(0) rotate(-30deg); opacity: 0; }
-  100% { transform: scale(1) rotate(0); opacity: 1; }
+/* 发牌：猫猫从卡包位置飞到格子（起点由 JS 用 inline transform 设定，过渡回 CSS 的 scale(1)） */
+.cell__inner.is-flying { transition: transform 0.46s cubic-bezier(0.22, 0.9, 0.3, 1.12); }
+.cell.is-landed .cell__inner { animation: land 0.3s ease-out both; }
+@keyframes land {
+  0% { transform: scale(1.16, 0.84) translateY(6%); }
+  55% { transform: scale(0.95, 1.05) translateY(-2%); }
+  100% { transform: scale(1); }
+}
+
+/* 卡包：发牌时落在棋盘中央，撕开顶封后猫猫从这里飞出 */
+.pack {
+  position: absolute; left: 50%; top: 50%;
+  width: 34%; padding-top: 44%;
+  transform: translate(-50%, -50%);
+  z-index: 2; pointer-events: none;
+  display: none;
+}
+.pack.is-show { display: block; }
+.pack__body {
+  position: absolute; left: 0; right: 0; top: 14%; bottom: 0;
+  background: var(--ember); border: 3px solid var(--ink); border-radius: 8px;
+  box-shadow: 5px 6px 0 rgba(46, 45, 40, 0.32);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.pack__top {
+  position: absolute; left: 0; right: 0; top: 0; height: 24%;
+  background: var(--ember-dark); border: 3px solid var(--ink); border-bottom: 0; border-radius: 8px 8px 0 0;
+  -webkit-clip-path: polygon(0 0, 100% 0, 100% 68%, 90% 100%, 80% 68%, 70% 100%, 60% 68%, 50% 100%, 40% 68%, 30% 100%, 20% 68%, 10% 100%, 0 68%);
+  clip-path: polygon(0 0, 100% 0, 100% 68%, 90% 100%, 80% 68%, 70% 100%, 60% 68%, 50% 100%, 40% 68%, 30% 100%, 20% 68%, 10% 100%, 0 68%);
+  transform-origin: 20% 100%;
+}
+.pack__band {
+  background: var(--paper); color: var(--ink);
+  font-size: 10px; font-weight: 900; font-style: italic; letter-spacing: 1.5px;
+  padding: 2px 8px; border-radius: 999px;
+}
+.pack__count { color: var(--paper); font-size: 26px; font-weight: 900; font-style: italic; margin-top: 4px; line-height: 1; }
+.pack.is-in { animation: pack-in 0.28s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+@keyframes pack-in {
+  0% { transform: translate(-50%, -120%) scale(0.5) rotate(-12deg); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1) rotate(0); opacity: 1; }
+}
+.pack.is-tear .pack__top { animation: pack-tear 0.34s cubic-bezier(0.3, 0.6, 0.4, 1) both; }
+@keyframes pack-tear {
+  0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+  30% { transform: translate(6%, -30%) rotate(8deg); opacity: 1; }
+  100% { transform: translate(70%, -180%) rotate(38deg); opacity: 0; }
+}
+.pack.is-tear .pack__body { animation: pack-jerk 0.34s ease-out both; }
+@keyframes pack-jerk {
+  0% { transform: rotate(0); }
+  25% { transform: rotate(-4deg) translateY(2%); }
+  55% { transform: rotate(3deg); }
+  100% { transform: rotate(0); }
+}
+.pack.is-out { animation: pack-out 0.3s ease-in both; }
+@keyframes pack-out {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  40% { transform: translate(-50%, -50%) scale(1.15, 0.85); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
 }
 .cell.is-hit { border-color: var(--ember); box-shadow: 0 0 0 2px var(--ember) inset; background: #fbe9dd; }
 .cell.is-hit .cell__inner { animation: wiggle 0.45s ease-in-out; }
@@ -631,3 +687,49 @@ body { background: var(--paper); color: var(--ink); }
 .ticker__item::before { content: '\25B6'; font-size: 10px; margin-right: 6px; opacity: 0.8; }
 .ticker__sep { display: inline-block; margin: 0 14px; opacity: 0.45; }
 @media (prefers-reduced-motion: reduce) { .ticker__live { animation: none; } }
+
+/* ---------- 占卜 / 结算界面围绕幸运款调色 ---------- */
+.banner { --acc: var(--ember); }
+.banner__hero-num { color: var(--acc); }
+.banner__new { background: var(--acc); }
+.top3--1 { border-color: var(--acc); }
+.top3--1 .top3__rank { background: var(--acc); }
+.top3--1 .top3__count { color: var(--acc); }
+.fortune { display: flex; align-items: center; justify-content: center; margin: 4px 0 10px; text-align: left; }
+.fortune__stamp {
+  flex-shrink: 0; width: 60px; height: 60px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  border: 3px solid var(--acc); color: var(--acc); background: var(--paper);
+  box-shadow: 0 0 0 2px var(--paper) inset, 0 0 0 3px var(--acc) inset;
+  font-size: 22px; font-weight: 900; letter-spacing: 2px; line-height: 1;
+  transform: rotate(-8deg); opacity: 0.95;
+}
+.fortune__stamp.is-in { animation: stamp-in 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+@keyframes stamp-in {
+  0% { transform: rotate(-30deg) scale(2.4); opacity: 0; }
+  60% { transform: rotate(-6deg) scale(0.94); opacity: 1; }
+  100% { transform: rotate(-8deg) scale(1); opacity: 0.95; }
+}
+.fortune__stamp--0 { border-style: dashed; opacity: 0.75; }
+.fortune__stamp--3 { box-shadow: 0 0 0 2px var(--paper) inset, 0 0 0 3px var(--acc) inset, 0 0 0 5px var(--paper), 0 0 0 7px var(--acc); }
+.fortune__body { margin-left: 14px; min-width: 0; }
+.fortune__pct { font-size: 12px; font-style: italic; color: var(--ink-soft); }
+.fortune__line { font-size: 15px; font-weight: 800; color: var(--ink); margin-top: 3px; }
+.banner[data-tier="3"] .banner__ribbon { background: var(--acc); }
+.overlay .fx-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+.overlay .banner { z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .fortune__stamp.is-in { animation: none; } }
+
+/* ---------- 页面转场：剪影扩张擦除 ---------- */
+.wipe {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  display: none; overflow: hidden;
+  z-index: 50; pointer-events: none;
+  color: var(--ink);
+}
+.wipe.is-active { display: block; pointer-events: auto; }
+.wipe__shape {
+  position: absolute; width: 100px; height: 100px;
+  transform: scale(0.01); transform-origin: 50% 50%;
+  will-change: transform; overflow: visible;
+}

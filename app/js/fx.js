@@ -242,6 +242,26 @@
         });
       }
     },
+    /* 撕开卡包：纸屑从撕口向上飞出（以元素宽度 rw 定尺寸，撕口很扁） */
+    scraps: function (c) {
+      var cols = ['#f4e7cc', '#e3d4ae', '#b6431f', '#2e2d28'];
+      var i, n = count(14, c);
+      for (i = 0; i < n; i++) spawn({
+        x: c.cx + rnd(-c.rw * 0.9, c.rw * 0.9), y: c.cy,
+        vx: rnd(-140, 140) * c.v, vy: -rnd(120, 300) * c.v, g: 750, drag: 0.985,
+        shape: 'rect', color: pick(cols), w: c.rw * rnd(0.08, 0.16), h: c.rw * rnd(0.05, 0.1),
+        rot: rnd(0, TAU), vr: rnd(-12, 12), life: rnd(0.6, 0.9)
+      });
+    },
+    /* 落地尘土：几粒纸色小圆从格子底部向两侧散开 */
+    dust: function (c) {
+      var i, n = count(6, c);
+      for (i = 0; i < n; i++) spawn({
+        x: c.cx + rnd(-c.r * 0.4, c.r * 0.4), y: c.cy + c.r * 0.7,
+        vx: rnd(-90, 90), vy: -rnd(20, 70), g: 250,
+        shape: 'circle', color: '#c9b892', alpha: 0.7, size: c.r * 0.07, size2: c.r * 0.16, life: rnd(0.3, 0.45), fade: 0.6
+      });
+    },
     /* 派对猫：彩纸屑 + 飘带 */
     party: function (c) {
       var cols = ['#ff6b6b', '#ffd43b', '#4dabf7', '#69db7c', '#da77f2', '#ffa94d', '#f783ac'];
@@ -255,7 +275,7 @@
   /* ---------- 对外 ---------- */
   function centerOf(el) {
     var a = el.getBoundingClientRect(), b = canvas.getBoundingClientRect();
-    return { cx: a.left - b.left + a.width / 2, cy: a.top - b.top + a.height / 2, r: Math.min(a.width, a.height) / 2 };
+    return { cx: a.left - b.left + a.width / 2, cy: a.top - b.top + a.height / 2, r: Math.min(a.width, a.height) / 2, rw: a.width / 2 };
   }
 
   /* 在某个格子上播放款式特效。fxId 预设名；k 强度（对子 1，连线约 2.2，大满贯约 1.5）；color 供默认预设使用 */
@@ -282,5 +302,11 @@
     PRESETS.pop(c);
   }
 
-  root.TurtleFX = { init: init, burst: burst, celebrate: celebrate, PRESETS: PRESETS };
+  /* 把画布挂到另一个宿主（如结算弹层）；再挂回棋盘即可恢复 */
+  function attach(hostEl) {
+    if (!canvas) { init(hostEl); return; }
+    if (canvas.parentNode !== hostEl) { hostEl.appendChild(canvas); resize(); }
+  }
+
+  root.TurtleFX = { init: init, attach: attach, burst: burst, celebrate: celebrate, PRESETS: PRESETS };
 })(window);

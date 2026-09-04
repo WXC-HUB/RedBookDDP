@@ -7,6 +7,7 @@
   var E = window.TurtleEngine;
   var Skin = window.TurtleSkin;
   var S = window.TurtleShare;
+  var Fortune = window.TurtleFortune;
 
   /* 数值配置（待调） */
   var CONFIG = { startPacks: 20, shakeLimit: 1 };
@@ -68,12 +69,18 @@
     }
   }
   function setOverlay(id, open) { $(id).classList.toggle('is-open', open); }
+  /* 剪影转场：从事件位置放大盖屏，盖住时执行 mid（切屏 / 重建 DOM），再缩回。转场中忽略重复触发。 */
+  function wipeTo(e, el, mid) {
+    var p = Wipe.pointFromEvent(e, el);
+    return Wipe.run({ x: p.x, y: p.y, shape: Skin.get().wipe, mid: mid });
+  }
 
   /* ---------- 棋盘 DOM ---------- */
   var boardEl = $('board');
   var boardWrap = boardEl.parentNode;
   var cells = [];
   var FX = window.TurtleFX;
+  var Wipe = window.TurtleWipe;
   FX.init(boardWrap);
 
   function buildBoard() {
@@ -100,6 +107,7 @@
     else c.el.setAttribute('data-fx', Skin.fx(color).id);
     c.inner.className = 'cell__inner sprite';
     c.inner.style.transform = '';
+    c.inner.style.transitionDelay = '';
     Skin.paint(c.inner, color);
   }
 
@@ -116,50 +124,79 @@
     setTimeout(function () { if (f.parentNode) f.parentNode.removeChild(f); }, 950);
   }
 
-  /* ---------- 滚动新闻（TV 字幕式播报） ----------
-   * push(text) 把一条播报排到队尾，从右侧滚入；文字持续向左匀速滚动，滚空后从头循环，
-   * 循环时把队列裁到最近几条。reset() 开局清空，stop() 离开游戏页时停掉 rAF。 */
+  /* ---------- 滚动新闻（TV 字幕式连续播报） ----------
+   * 轨道是一条持续向左滚动的 DOM 流：新播报 push 进来只会接在当前尾部，绝不打断正在滚动的内容；
+   * 完全滚出左侧的元素被移除，并把它的宽度加回偏移量，画面不跳；
+   * 尾部一旦进入视口且后面没内容了，就把最近几条循环补上，字幕永远不断流。 */
   var News = (function () {
     var viewport = $('ticker-viewport'), track = $('ticker-text');
-    var items = [], x = 0, lastT = 0, speed = 64, running = false, raf = 0;
-    var KEEP = 4;
-    function render() {
-      track.innerHTML = '';
-      for (var i = 0; i < items.length; i++) {
-        if (i) { var sep = document.createElement('span'); sep.className = 'ticker__sep'; sep.textContent = '\u25C6'; track.appendChild(sep); }
-        var it = document.createElement('span');
-        it.className = 'ticker__item' + (items[i].strong ? ' is-strong' : '');
-        it.textContent = items[i].text;
-        track.appendChild(it);
+    var x = 0, lastT = 0, speed = 64, running = false, raf = 0;
+    var recent = [], cycle = 0, KEEP = 4;
+
+    function makeNode(item, isCycle) {
+      var frag = document.createDocumentFragment();
+      if (track.childNodes.length) {
+        var sep = document.createElement('span');
+        sep.className = 'ticker__sep'; sep.textContent = '\u25C6';
+        if (isCycle) sep.setAttribute('data-cycle', '1');
+        frag.appendChild(sep);
+      }
+      var el = document.createElement('span');
+      el.className = 'ticker__item' + (item.strong ? ' is-strong' : '');
+      el.textContent = item.text;
+      if (isCycle) el.setAttribute('data-cycle', '1');
+      frag.appendChild(el);
+      track.appendChild(frag);
+    }
+
+    /* 去掉尚未进入视口的循环补位内容，让新播报紧跟在可见尾部之后 */
+    function dropUnseenCycles() {
+      var vw = viewport.clientWidth;
+      while (track.lastChild && track.lastChild.getAttribute('data-cycle') && x + track.lastChild.offsetLeft > vw) {
+        track.removeChild(track.lastChild);
       }
     }
+
     function frame(t) {
       if (!running) return;
       var dt = Math.min(64, t - lastT); lastT = t;
       x -= speed * dt / 1000;
-      if (x < -track.offsetWidth - 20) {
-        if (items.length > KEEP) { items = items.slice(items.length - KEEP); render(); }
-        x = viewport.clientWidth;
+      // 头部完全滚出 → 移除并补偿偏移
+      while (track.firstChild) {
+        var w = track.firstChild.offsetWidth;
+        if (x + w < -2) { x += w; track.removeChild(track.firstChild); } else break;
+      }
+      // 尾部进入视口且后面没内容 → 循环补最近几条
+      var vw = viewport.clientWidth;
+      if (recent.length && x + track.offsetWidth < vw - 4) {
+        makeNode(recent[cycle % recent.length], true);
+        cycle++;
       }
       track.style.transform = 'translateX(' + x + 'px)';
       raf = requestAnimationFrame(frame);
     }
     function start() {
       if (running) return;
-      running = true; lastT = performance.now(); x = viewport.clientWidth;
+      running = true; lastT = performance.now();
       raf = requestAnimationFrame(frame);
     }
     function stop() { running = false; if (raf) cancelAnimationFrame(raf); raf = 0; }
     function push(text, strong) {
-      items.push({ text: text, strong: !!strong });
-      if (items.length > 12) items = items.slice(items.length - 12);
-      render();
+      var item = { text: text, strong: !!strong };
+      recent.push(item);
+      if (recent.length > KEEP) recent.shift();
+      cycle = 0;
+      dropUnseenCycles();
+      if (!track.childNodes.length) x = viewport.clientWidth; // 空轨道：从右侧滚入
+      makeNode(item, false);
       start();
     }
     function reset(text) {
       stop();
-      items = [];
-      render();
+      track.innerHTML = '';
+      recent = []; cycle = 0;
+      x = viewport.clientWidth;
+      track.style.transform = 'translateX(' + x + 'px)';
       if (text) push(text, false);
     }
     return { push: push, reset: reset, start: start, stop: stop };
@@ -395,13 +432,13 @@
     $('hud-packs').textContent = state.packs - res.reward.total; // 先显示扣费后的数字
     bumpPacks('is-drop');
     News.push('第 ' + state.round + ' 轮：新一批卡包到店');
+    await playPackOpen(out.filled.length);
     for (k = 0; k < out.filled.length; k++) {
       i = out.filled[k];
-      paintCell(i, out.board[i]);
-      cells[i].el.classList.add('is-dealing');
+      flyIn(i, out.board[i], k * 50);
     }
-    await wait(120 + out.filled.length * 70 + 260);
-    for (k = 0; k < out.filled.length; k++) cells[out.filled[k]].el.classList.remove('is-dealing');
+    burstPack();
+    await wait(out.filled.length * 50 + 470 + 260);
 
     if (res.removed.length === 0) {
       if (!out.needShake) { News.push('今日无事发生，大家面面相觑', true); await wait(700); }
@@ -410,6 +447,49 @@
     }
     await playSettlement(out);
     await afterJudge(out);
+  }
+
+  /* ---------- 开卡包演出：卡包落下 → 撕开顶封 → 猫猫从包里飞到各自格子 ---------- */
+  var packEl = $('pack');
+
+  async function playPackOpen(count) {
+    $('pack-count').textContent = '×' + count;
+    packEl.className = 'pack is-show is-in';
+    await wait(300);
+    packEl.classList.add('is-tear');
+    FX.burst('scraps', packEl.querySelector('.pack__top'), 1);
+    await wait(340);
+  }
+
+  function burstPack() {
+    packEl.classList.remove('is-in');
+    packEl.classList.add('is-out');
+    FX.burst('pop', packEl, 1.2, '#f4e7cc');
+    setTimeout(function () { packEl.className = 'pack'; }, 320);
+  }
+
+  /* 猫猫从卡包位置飞到格子：先摆到起点，再过渡回原位；落地压一下并扬起尘土 */
+  function flyIn(i, color, delay) {
+    var c = cells[i];
+    paintCell(i, color);
+    var from = packEl.getBoundingClientRect(), to = c.inner.getBoundingClientRect();
+    var dx = from.left + from.width / 2 - (to.left + to.width / 2);
+    var dy = from.top + from.height / 2 - (to.top + to.height / 2);
+    c.inner.style.transition = 'none';
+    c.inner.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(0.25) rotate(-25deg)';
+    void c.inner.offsetWidth;
+    c.inner.style.transition = '';
+    c.inner.classList.add('is-flying');
+    c.inner.style.transitionDelay = delay + 'ms';
+    c.inner.style.transform = '';
+    setTimeout(function () {
+      if (c.color !== color || !c.inner.classList.contains('is-flying')) return; // 期间被重画了
+      c.inner.classList.remove('is-flying');
+      c.inner.style.transitionDelay = '';
+      c.el.classList.add('is-landed');
+      FX.burst('dust', c.el, 1);
+      setTimeout(function () { c.el.classList.remove('is-landed'); }, 300);
+    }, delay + 470);
   }
 
   /* ---------- 摇晃棋盘 ---------- */
@@ -549,8 +629,11 @@
     var t = e.target;
     while (t && t !== this && !(t.getAttribute && t.getAttribute('data-color') !== null)) t = t.parentNode;
     if (!t || t === this) return;
-    setOverlay('lucky', false);
-    startRun(parseInt(t.getAttribute('data-color'), 10));
+    var color = parseInt(t.getAttribute('data-color'), 10);
+    wipeTo(e, t, function () {
+      setOverlay('lucky', false);
+      startRun(color);
+    });
   });
 
   function openLuckyPicker() {
@@ -563,6 +646,8 @@
   function startRun(lucky) {
     state = E.startRun(CONFIG);
     E.setLucky(state, lucky);
+    Fortune.prepare(state.cfg);
+    FX.attach(boardWrap);
     Skin.paint($('lucky-pill-sprite'), lucky);
     $('lucky-pill-note').textContent = Skin.itemName(lucky) + ' · 消除时每只 +1';
     buildBoard();
@@ -578,10 +663,32 @@
 
   var lastStats = null;
 
+  /* 结算特效：粒子画布临时挂到结算弹层，用幸运款自己的特效预设在分数与运势印章上炸开；档位越高越热闹 */
+  function playResultFx(tier) {
+    var fxInfo = Skin.fx(state.lucky);
+    var overlay = $('result'), hero = $('result-score'), stamp = $('fortune-stamp');
+    FX.attach(overlay);
+    stamp.classList.remove('is-in');
+    void stamp.offsetWidth;
+    stamp.classList.add('is-in');
+    setTimeout(function () {
+      if (!overlay.classList.contains('is-open')) return;
+      FX.burst(fxInfo.id, stamp, 1 + tier * 0.3, fxInfo.color);
+    }, 420);
+    setTimeout(function () {
+      if (!overlay.classList.contains('is-open')) return;
+      FX.burst(fxInfo.id, hero, 1.4 + tier * 0.4, fxInfo.color);
+      if (tier >= 2) FX.celebrate(hero, tier === 3 ? 2.4 : 1.4);
+    }, 700);
+  }
+
   function finishRun() {
     $('btn-deal').disabled = true;
     showShake(false);
-    var reasonText = state.ended === 'nomatch' ? '摇过棋盘还是没有任何消除' : '卡包用完了';
+    // 占卜：本局翻开卡包数在蒙特卡洛分布里的百分位 → 4 档运势
+    var fortune = Fortune.rate(state.cfg, state.spent);
+    var fortuneLine = Skin.fortune(state.lucky)[fortune.tier];
+    var reasonText = '今日运势 ' + fortune.name + ' · 翻开 ' + state.spent + ' 个卡包，超过 ' + fortune.pctText + ' 的' + Skin.get().noun;
     // 最终得分 = 暂存区 + 盘上剩余；不看轮次
     var t = E.tally(state, 3);
     var newRecord = t.total > best.score || state.earned > best.earned;
@@ -597,10 +704,20 @@
       lines: state.counts.lines, pairs: state.counts.pairs,
       clears: state.counts.clear, slams: state.counts.slam, shakes: state.counts.shakes,
       lucky: state.lucky, luckyBonus: state.counts.lucky * state.cfg.reward.lucky,
-      reasonText: reasonText, newRecord: newRecord
+      reasonText: reasonText, newRecord: newRecord,
+      spent: state.spent, fortune: fortune.name, fortuneTier: fortune.tier, fortuneLine: fortuneLine
     };
 
     $('result-reason').textContent = reasonText;
+    // 结算界面围绕幸运款调色：强调色取该款式的特效主色
+    var acc = Skin.fx(state.lucky).color;
+    var bannerEl = document.querySelector('#result .banner');
+    bannerEl.style.setProperty('--acc', acc);
+    bannerEl.setAttribute('data-tier', fortune.tier);
+    var stamp = $('fortune-stamp');
+    stamp.textContent = fortune.name;
+    stamp.className = 'fortune__stamp fortune__stamp--' + fortune.tier;
+    $('fortune-line').textContent = fortuneLine;
     var luckyEl = $('result-lucky');
     luckyEl.innerHTML = '';
     luckyEl.appendChild(document.createTextNode('幸运款'));
@@ -620,6 +737,7 @@
     $('result-new-record').classList.toggle('is-show', newRecord);
     $('btn-share').disabled = false;
     setOverlay('result', true);
+    playResultFx(fortune.tier);
   }
 
   /* 结算 Top3：持有数量（暂存区 + 盘上剩余）最多的三款 */
@@ -650,6 +768,7 @@
 
   function goHome() {
     News.stop();
+    FX.attach(boardWrap);
     setOverlay('result', false);
     setOverlay('share-preview', false);
     showShake(false);
@@ -674,17 +793,19 @@
   /* ---------- 事件绑定 ---------- */
   $('btn-start').addEventListener('click', openLuckyPicker);
   $('btn-again').addEventListener('click', openLuckyPicker);
-  $('btn-lucky-random').addEventListener('click', function () {
-    setOverlay('lucky', false);
-    startRun(Math.floor(Math.random() * 9));
+  $('btn-lucky-random').addEventListener('click', function (e) {
+    wipeTo(e, this, function () {
+      setOverlay('lucky', false);
+      startRun(Math.floor(Math.random() * 9));
+    });
   });
-  $('btn-home').addEventListener('click', goHome);
-  $('btn-home-ingame').addEventListener('click', function () {
-    if (busy) return;
+  $('btn-home').addEventListener('click', function (e) { wipeTo(e, this, goHome); });
+  $('btn-home-ingame').addEventListener('click', function (e) {
+    if (busy || Wipe.isActive()) return;
     if (state && !state.ended && state.round > 0) {
       if (!confirm('退出当前这局？进度不会保存。')) return;
     }
-    goHome();
+    wipeTo(e, this, goHome);
   });
   $('btn-deal').addEventListener('click', playRound);
   $('btn-shake').addEventListener('click', shakeBoard);
